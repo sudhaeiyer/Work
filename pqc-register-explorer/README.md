@@ -19,6 +19,8 @@ Then visit `http://localhost:8080/`.
 
 ## Saved state
 
-Register edits stay in this browser through `localStorage`. That includes adherence status and CRI tracking.
+JSON export is the default persistence path. Adherence, threat-area and vendor-dependency evidence, CRI remediation checks, and vendor PQCMM mappings are kept in a JSON file named `pqc-register-backup-….json`.
 
-Use **Backup JSON** in the header to download a JSON export of that state. Use **Import JSON** to load a backup into the current browser. After local saves, the app may also offer an automatic backup download.
+- **Export JSON** and **Import JSON** in the header are the primary controls. Export downloads the current register. Import loads a file back into the page.
+- A meaningful save downloads that file on its own. Adherence **Save** downloads immediately and prompts you to keep the file or import one. CRI checklist and PQCMM edits download immediately, then at most every few seconds while you keep editing, so you do not have to hunt for Export.
+- This browser also keeps a working copy in `localStorage` so a refresh here can continue. That cache is not the record. Import the JSON file to restore the register in another browser, or after the working copy is cleared.

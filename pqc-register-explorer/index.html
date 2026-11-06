@@ -175,6 +175,13 @@ ol.rem li{margin:0 0 8px;max-width:70ch}
 .track-summary .pill{font:500 12px var(--mono);background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
 .persist-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
 .persist-bar .hint{margin:0}
+.persist-hdr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1 1 320px;min-width:0}
+.persist-hdr .btn{flex:0 0 auto}
+.persist-hdr .hint{flex:1 1 200px;margin:0}
+.json-dialog{border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);padding:16px 18px;max-width:440px}
+.json-dialog::backdrop{background:rgba(0,0,0,.4)}
+.json-dialog h3{font:600 18px/1.3 var(--display);margin:0 0 8px}
+.json-dialog p{margin:0 0 12px}
 
 
 .editor .vd-grid{display:flex;flex-direction:column;gap:8px;margin:8px 0 4px}
@@ -214,8 +221,11 @@ ol.rem li{margin:0 0 8px;max-width:70ch}
     <p class="byline">Sudha Iyer, Chief Officer — Cryptography &amp; PKI, Citi</p>
   </div>
   <input id="q" type="search" placeholder="Search threat areas, assets, vendors, remediations…" aria-label="Search">
-  <button class="btn" type="button" id="hdr-export" title="Download JSON backup">Backup JSON</button>
-  <label class="btn" style="display:inline-flex;align-items:center;cursor:pointer" title="Import JSON backup">Import JSON<input id="hdr-import" type="file" accept="application/json,.json" hidden></label>
+  <div class="persist-hdr" role="group" aria-label="JSON persistence">
+    <button class="btn primary" type="button" id="hdr-export" title="Download the JSON file that is the default record">Export JSON</button>
+    <label class="btn primary" style="display:inline-flex;align-items:center;cursor:pointer" title="Load a JSON file, the default record">Import JSON<input id="hdr-import" type="file" accept="application/json,.json" hidden></label>
+    <span class="hint" id="persist-status" role="status">JSON export is the default record. This browser keeps a working copy until you export or import.</span>
+  </div>
 </header>
 <div class="wrap">
   <nav id="nav" aria-label="Entity types"></nav>
@@ -225,6 +235,16 @@ ol.rem li{margin:0 0 8px;max-width:70ch}
   </main>
 </div>
 <aside id="pane" aria-live="polite"></aside>
+<dialog id="json-save-dialog" class="json-dialog">
+  <form method="dialog">
+    <h3>JSON file saved</h3>
+    <p id="json-save-dialog-body">That JSON file is the default record of this save. Keep it, and use Import JSON to load it again.</p>
+    <div class="chips">
+      <button class="btn primary" value="ok">Keep this file</button>
+      <button class="btn" id="json-save-reimport" type="button">Import JSON…</button>
+    </div>
+  </form>
+</dialog>
 
 <script>
 // ---------------------------------------------------------------- data (from the register)
@@ -1345,7 +1365,7 @@ function detail(id){
     body += section("Controls in the register", `<ol class="rem">${o.controls.map(c=>`<li>${criControl(c)}</li>`).join("")}</ol>`);
     body += section("Evidence expected", `<p>${esc(o.ev)}</p>`);
     body += section("Persistence", persistControlsHtml());
-    body += section("Threat-area remediation checklist", `<p class="hint">Check off each linked threat area’s resolutions and remediations as they are completed for this CRI outcome. Progress is saved in this browser.</p>${remChecklistHtml(id)}`);
+    body += section("Threat-area remediation checklist", `<p class="hint">Check off each linked threat area’s resolutions and remediations as they are completed for this CRI outcome. Each change downloads a JSON file, which is the default record. This browser also keeps a working copy.</p>${remChecklistHtml(id)}`);
     body += section("Vendor dependency PQCMM map", `<p class="hint">Map every linked vendor dependency to its current PQCMM level against the required path in the register.</p>${vdPqmmMapHtml(id)}`);
     const rt = tally(o.tas.map(t=>[id,t]));
     body += section("Adherence by threat area", `<p>${pctBar(rt,false)}</p><div class="adhlist">${o.tas.map(t=>{ const a=adhOf(id,t)||{}; const st=a.status||"not-started"; return `<button class="adhrow st-${st}" data-cell="${id}|${t}"><span class="g">${STATUS[st].g}</span><span class="t">${label(t)} · ${esc(TAS[t].t)}</span><span class="m">${STATUS[st].l}${a.owner?" · "+esc(a.owner):""}</span></button>`; }).join("")}</div>`);
@@ -1354,12 +1374,15 @@ function detail(id){
   $("#pane").dataset.id = id;
   $("#pane").innerHTML = `<div class="top"><div><div class="idl">${label(id)}</div><h2>${esc(o.t)}</h2></div><button id="close" class="btn" aria-label="Close">Close</button></div>${body}`;
   $("#pane").classList.add("open");
+  placePane();
   $("#close").onclick = closePane;
   $("#pane").querySelectorAll("[data-cell]").forEach(b=>b.onclick=()=>{ const [c,t]=b.dataset.cell.split("|"); openEditor(c,t); });
   bindCriTrackHandlers($("#pane"));
   bindPersistControls($("#pane"));
 }
+function placePane(){ const h=document.querySelector("header"); const p=$("#pane"); if(h&&p) p.style.top=h.offsetHeight+"px"; }
 function closePane(){ $("#pane").classList.remove("open"); $("#pane").dataset.id=""; if(cur==="cri" && !query) renderGrid(); }
+window.addEventListener("resize", placePane);
 
 // ---------------------------------------------------------------- use-case threat model view
 const NW=172, NH=66, COLW=292, ROWH=108, PAD=16, LANE=26;
@@ -1456,7 +1479,7 @@ function renderUseCase(uc){
 }
 
 
-// ---------------------------------------------------------------- adherence tracking (localStorage + optional Claude db)
+// ---------------------------------------------------------------- adherence tracking (JSON file default, localStorage cache, optional Claude db)
 const STATUS = {
   "not-started":{l:"Not started",g:"–"},
   "in-progress":{l:"In progress",g:"◔"},
@@ -1465,7 +1488,7 @@ const STATUS = {
   "exception":{l:"Exception",g:"!"},
 };
 const ADH_LS_KEY = "pqc-register-adherence-v1";
-let ADH = {}, dbRef = null, canWrite = true, adhState = "loading", adhNote = "", persistMode = "local";
+let ADH = {}, dbRef = null, canWrite = true, adhState = "loading", adhNote = "", persistMode = "json";
 const adhKey = (cri, ta) => `${cri}__${ta}`;
 function adhOf(cri, ta){ return ADH[adhKey(cri,ta)] || null; }
 function vdsForTa(ta){ return (TAS[ta] && TAS[ta].vds) ? TAS[ta].vds.slice() : []; }
@@ -1477,8 +1500,10 @@ function loadCriTrack(){
   catch(e){ CRI_TRACK={}; }
   criTrackReady = true;
 }
-function saveCriTrack(){ try{ localStorage.setItem(CRI_TRACK_KEY, JSON.stringify(CRI_TRACK)); afterLocalSave(); return true; }catch(e){ return false; } }
+function saveCriTrack(){ try{ localStorage.setItem(CRI_TRACK_KEY, JSON.stringify(CRI_TRACK)); return true; }catch(e){ return false; } }
 const BACKUP_FLAG = "pqc-register-backup-at";
+let suppressJsonDownload = 0, lastJsonDownloadAt = 0, jsonDirty = false, jsonTimer = null, jsonPrompted = false;
+const JSON_COALESCE_MS = 4000;
 function persistBundle(){
   ensureCriTrack();
   return {
@@ -1488,12 +1513,21 @@ function persistBundle(){
     criTrack: CRI_TRACK
   };
 }
+function setPersistStatus(text){
+  const el = $("#persist-status");
+  if(el) el.textContent = text;
+}
 function applyPersistBundle(data){
   if(!data || typeof data!=="object") throw new Error("Invalid backup file");
-  if(data.adherence && typeof data.adherence==="object"){ ADH = data.adherence; saveLocalAdh(); }
-  if(data.criTrack && typeof data.criTrack==="object"){ CRI_TRACK = data.criTrack; criTrackReady = true; saveCriTrack(); }
-  adhNote = "Loaded persistence file from "+(data.exportedAt?data.exportedAt.slice(0,19):"backup")+".";
+  suppressJsonDownload++;
+  try{
+    if(data.adherence && typeof data.adherence==="object"){ ADH = data.adherence; saveLocalAdh(); }
+    if(data.criTrack && typeof data.criTrack==="object"){ CRI_TRACK = data.criTrack; criTrackReady = true; saveCriTrack(); }
+  } finally { suppressJsonDownload--; }
+  jsonDirty = false;
+  adhNote = "Imported JSON backup. That file is the default record; this browser now holds a working copy of it.";
   adhState = "local";
+  setPersistStatus(adhNote);
   refresh();
   if(cur==="cri" && !query) renderGrid();
   const open=$("#pane").dataset.id; if(open && typeOf(open)) detail(open);
@@ -1502,43 +1536,77 @@ function downloadPersistBundle(reason){
   const blob = new Blob([JSON.stringify(persistBundle(),null,2)], {type:"application/json"});
   const a = document.createElement("a");
   const stamp = new Date().toISOString().replace(/[:.]/g,"-");
+  const filename = `pqc-register-backup-${stamp}.json`;
   a.href = URL.createObjectURL(blob);
-  a.download = `pqc-register-backup-${stamp}.json`;
+  a.download = filename;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
   try{ localStorage.setItem(BACKUP_FLAG, new Date().toISOString()); }catch(e){}
-  return true;
+  lastJsonDownloadAt = Date.now();
+  jsonDirty = false;
+  if(jsonTimer){ clearTimeout(jsonTimer); jsonTimer = null; }
+  return filename;
 }
-function exportPersistBundle(){ downloadPersistBundle("manual"); adhNote="Downloaded JSON backup."; refresh(); }
+function promptReimport(filename){
+  const dlg = $("#json-save-dialog");
+  const body = $("#json-save-dialog-body");
+  if(!dlg || !body || typeof dlg.showModal !== "function") return;
+  body.textContent = "Downloaded "+filename+". That JSON file is the default record of this save. Keep it. Import JSON to load it again in this browser or another. This browser keeps a working copy until you import a file.";
+  const btn = $("#json-save-reimport");
+  if(btn && !btn.dataset.bound){
+    btn.dataset.bound = "1";
+    btn.onclick = () => { if(dlg.open) dlg.close(); const input = $("#hdr-import"); if(input) input.click(); };
+  }
+  try{ if(!dlg.open) dlg.showModal(); }catch(e){}
+}
+function persistToJson(reason){
+  if(suppressJsonDownload){ jsonDirty = true; return ""; }
+  const force = reason==="manual" || reason==="adh";
+  if(!force && (Date.now()-lastJsonDownloadAt) < JSON_COALESCE_MS){
+    jsonDirty = true;
+    if(!jsonTimer) jsonTimer = setTimeout(()=>{ jsonTimer = null; if(jsonDirty) persistToJson("cadence"); }, JSON_COALESCE_MS);
+    const pending = "Working copy updated. The JSON file downloads automatically as you edit, or use Export JSON now. Import JSON restores a file.";
+    adhNote = pending;
+    setPersistStatus(pending);
+    return "";
+  }
+  const filename = downloadPersistBundle(reason);
+  if(reason!=="adh"){
+    const msg = "Saved to "+filename+". JSON is the default record — keep that file and use Import JSON to restore it. This browser holds a working copy.";
+    adhNote = msg;
+    setPersistStatus(msg);
+  }
+  if(reason==="adh" || (reason!=="manual" && !jsonPrompted)){
+    jsonPrompted = true;
+    promptReimport(filename);
+  }
+  return filename;
+}
+function exportPersistBundle(){
+  persistToJson("manual");
+  adhNote = "Exported a JSON file. That download is the default record. Import JSON loads it back.";
+  setPersistStatus(adhNote);
+  refresh();
+}
 function importPersistFile(file){
   const reader = new FileReader();
   reader.onload = () => {
-    try { applyPersistBundle(JSON.parse(String(reader.result||"{}"))); adhNote="Imported JSON backup into this browser."; refresh(); }
-    catch(e){ adhNote="Could not import that JSON ("+(e&&e.message||"error")+")."; refresh(); }
+    try { applyPersistBundle(JSON.parse(String(reader.result||"{}"))); }
+    catch(e){ adhNote="Could not import that JSON ("+(e&&e.message||"error")+")."; setPersistStatus(adhNote); refresh(); }
   };
   reader.readAsText(file);
 }
-function maybeAutoBackup(){
-  try{
-    const last = localStorage.getItem(BACKUP_FLAG);
-    const age = last ? (Date.now()-Date.parse(last)) : Infinity;
-    // Auto-download a backup at most once per 12 hours when there is something to keep
-    const has = Object.keys(ADH||{}).length + Object.keys(CRI_TRACK||{}).length;
-    if(has && age > 12*60*60*1000) downloadPersistBundle("auto");
-  }catch(e){}
-}
 function persistControlsHtml(){
   return `<div class="persist-bar">
-    <button class="btn primary" type="button" id="persist-export">Download JSON backup</button>
-    <label class="btn" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">Import JSON<input id="persist-import" type="file" accept="application/json,.json" hidden></label>
-    <span class="hint">Backups keep adherence, TA remediation checks, and VD PQCMM mappings. An automatic download also runs about every 12 hours when you have saved data.</span>
+    <button class="btn primary js-persist-export" type="button">Export JSON</button>
+    <label class="btn primary" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">Import JSON<input class="js-persist-import" type="file" accept="application/json,.json" hidden></label>
+    <span class="hint">JSON export is the default record of adherence, TA remediation checks, and VD PQCMM mappings. A save downloads that file. This browser keeps a working copy until you import another file.</span>
   </div>`;
 }
 function bindPersistControls(root){
-  const ex = root.querySelector("#persist-export"); if(ex) ex.onclick = () => exportPersistBundle();
-  const im = root.querySelector("#persist-import"); if(im) im.onchange = () => { if(im.files&&im.files[0]) importPersistFile(im.files[0]); im.value=""; };
+  root.querySelectorAll(".js-persist-export").forEach(ex => { ex.onclick = () => exportPersistBundle(); });
+  root.querySelectorAll(".js-persist-import").forEach(im => { im.onchange = () => { if(im.files&&im.files[0]) importPersistFile(im.files[0]); im.value=""; }; });
 }
-function afterLocalSave(){ maybeAutoBackup(); }
 
 let criTrackReady = false;
 function ensureCriTrack(){ if(!criTrackReady){ loadCriTrack(); criTrackReady = true; } }
@@ -1599,7 +1667,7 @@ function bindCriTrackHandlers(root){
     inp.onchange=()=>{
       const parts=inp.getAttribute("data-rem-check").split("|");
       const n=parts.pop(); const ta=parts.pop(); const cri=parts.join("|");
-      const tr=trackOf(cri); tr.rem[remKey(ta,+n)]=!!inp.checked; saveCriTrack();
+      const tr=trackOf(cri); tr.rem[remKey(ta,+n)]=!!inp.checked; saveCriTrack(); persistToJson("track");
       if(cur==="cri" && !query) renderGrid();
       if($("#pane").dataset.id===cri) detail(cri);
     };
@@ -1610,7 +1678,7 @@ function bindCriTrackHandlers(root){
       const cri=raw.slice(0,i); const v=raw.slice(i+1);
       const tr=trackOf(cri);
       if(sel.value) tr.vdLevel[v]=sel.value; else delete tr.vdLevel[v];
-      saveCriTrack();
+      saveCriTrack(); persistToJson("track");
       if(cur==="cri" && !query) renderGrid();
       if($("#pane").dataset.id===cri) detail(cri);
     };
@@ -1670,16 +1738,17 @@ function loadLocalAdh(){
   } catch(e){ return {}; }
 }
 function saveLocalAdh(){
-  try { localStorage.setItem(ADH_LS_KEY, JSON.stringify(ADH)); afterLocalSave(); return true; }
-  catch(e){ adhNote = "Could not write to this browser’s storage ("+(e&&e.name||"error")+")."; return false; }
+  try { localStorage.setItem(ADH_LS_KEY, JSON.stringify(ADH)); return true; }
+  catch(e){ return false; }
 }
 (async () => {
   ADH = loadLocalAdh();
   adhState = "local";
-  adhNote = Object.keys(ADH).length
-    ? "Adherence and TA/VD evidence are saved in this browser."
-    : "Save adherence with evidence of how each threat area and vendor dependency was addressed.";
-  persistMode = "local";
+  adhNote = (Object.keys(ADH).length || Object.keys(CRI_TRACK).length)
+    ? "Working copy loaded in this browser. JSON export is the default record — use Import JSON to load a saved file, or Export JSON to write this copy out."
+    : "JSON export is the default record. Saving downloads a JSON file automatically. Import JSON restores one.";
+  setPersistStatus(adhNote);
+  persistMode = "json";
   canWrite = true;
   refresh();
   try {
@@ -1695,13 +1764,12 @@ function saveLocalAdh(){
       saveLocalAdh();
       if(!snap.metadata.fromCache){ clearTimeout(timer); adhState="live"; adhNote="Shared adherence record · live"+(canWrite===false?" · you are view-only":""); }
       refresh();
-    }, err => { clearTimeout(timer); adhState="local"; adhNote="Cloud adherence unavailable ("+err.code+"); continuing with browser storage."; refresh(); });
+    }, err => { clearTimeout(timer); adhState="local"; adhNote="Cloud adherence unavailable ("+err.code+"). JSON export remains the default record, with a working copy in this browser."; setPersistStatus(adhNote); refresh(); });
   } catch(e){ /* stay on local */ }
 })();
 function refresh(){ if(cur==="CRI" && location.hash.slice(1)==="CRI") renderCRI(); if(cur==="HEAT" && location.hash.slice(1)==="HEAT") renderHeat(); const open = $("#pane").dataset.id; if(open && $("#pane").classList.contains("open") && typeOf(open)) detail(open); }
 async function saveAdh(cri, ta, data){
-  if(canWrite===false){ adhNote="Your access level is view-only for adherence records."; refresh(); return false; }
-  const uid = await (async()=>{ try{ const u = await claude.use("user"); return u ? await u.id() : null; }catch(e){ return null; } })();
+  if(canWrite===false){ adhNote="Your access level is view-only for adherence records."; setPersistStatus(adhNote); refresh(); return false; }
   const vdEvidence = data.vdEvidence || {};
   const body = {
     cri, ta,
@@ -1712,25 +1780,46 @@ async function saveAdh(cri, ta, data){
     taAddressed:data.taAddressed||"",
     vdEvidence,
     updatedAt:new Date().toISOString(),
-    updatedBy: uid||"local"
+    updatedBy:"local"
   };
   if(body.status==="evidenced" && !evidenceComplete(body, ta)){
     adhNote = "For Evidenced, record how this threat area was addressed and how each linked vendor dependency was addressed.";
+    setPersistStatus(adhNote);
     refresh();
     return false;
   }
   ADH[adhKey(cri,ta)] = body;
   const localOk = saveLocalAdh();
+  const filename = persistToJson("adh");
+  try{
+    if(window.claude){
+      const u = await claude.use("user");
+      const uid = u ? await u.id() : null;
+      if(uid){ body.updatedBy = uid; ADH[adhKey(cri,ta)] = body; saveLocalAdh(); }
+    }
+  }catch(e){}
+  const cacheBit = localOk ? "A working copy remains in this browser." : "This browser could not cache a working copy.";
+  const fileBit = filename || "a JSON download";
   if(dbRef){
-    try { await dbRef.collection("adherence").doc(adhKey(cri,ta)).set(body); adhState="live"; adhNote=""; }
+    try {
+      await dbRef.collection("adherence").doc(adhKey(cri,ta)).set(body);
+      adhState="live";
+      adhNote = "Saved to "+fileBit+" (default record) and the shared adherence record, including TA and VD evidence. "+cacheBit+" Import JSON restores the file.";
+    }
     catch(e){ if(e && e.code==="invalid_argument"){ canWrite=false; adhNote="Your access level is view-only for adherence records."; }
-      else { adhNote="Cloud save failed ("+(e&&e.code||"error")+"); kept a local copy in this browser."; adhState="local"; } }
+      else { adhNote="Cloud save failed ("+(e&&e.code||"error")+"). Saved to "+fileBit+" (default record), including TA and VD evidence. "+cacheBit; adhState="local"; } }
+  } else if(filename){
+    adhState="local";
+    adhNote = "Saved to "+filename+" (default record), including TA and VD evidence. Keep that file and use Import JSON to restore it. "+cacheBit;
   } else if(localOk){
     adhState="local";
-    adhNote="Saved in this browser, including TA and VD evidence.";
+    adhNote = "Working copy updated, including TA and VD evidence. Export JSON to write the default record.";
+  } else {
+    adhNote = "Could not save. Export JSON to write the default record.";
   }
+  setPersistStatus(adhNote);
   refresh();
-  return localOk || !!dbRef;
+  return localOk || !!filename || !!dbRef;
 }
 function collectEditorData(){
   const vdEvidence = {};
@@ -1773,7 +1862,7 @@ function editor(cri, ta){
   </div>`;
 }
 function openEditor(cri, ta){
-  const pane = $("#pane"); pane.dataset.id = ""; pane.innerHTML = editor(cri, ta); pane.classList.add("open");
+  const pane = $("#pane"); pane.dataset.id = ""; pane.innerHTML = editor(cri, ta); pane.classList.add("open"); placePane();
   $("#ed-close").onclick = closePane;
   const sv = $("#ed-save"); if(sv) sv.onclick = async () => {
     sv.disabled = true; sv.textContent = "Saving…";
@@ -1811,7 +1900,7 @@ function renderCRI(){
       <div class="tile"><span class="k">In progress</span><span class="v">${all.inprog}</span><span class="s">work under way</span></div>
       <div class="tile warn"><span class="k">Exceptions</span><span class="v">${all.exc}</span><span class="s">open, with expiry ≤ SM2</span></div>
       <div class="tile"><span class="k">Not started</span><span class="v">${all.none}</span><span class="s">no status recorded</span></div></div>`;
-  const stateLine = adhState==="live" ? `Shared adherence record · live${canWrite===false?" · you are view-only":""}` : adhState==="local" ? esc(adhNote||"Adherence is saved in this browser.") : adhState==="loading" ? "Loading adherence records…" : esc(adhNote);
+  const stateLine = adhState==="live" ? `JSON export is the default record. Shared adherence record · live${canWrite===false?" · you are view-only":""}${adhNote?" · "+esc(adhNote):""}` : adhState==="local" ? esc(adhNote||"JSON export is the default record. This browser holds a working copy.") : adhState==="loading" ? "Loading adherence records…" : esc(adhNote);
   $("#main").innerHTML = `<div class="ucv">
     <div class="top"><div><div class="idl">View — CRI Profile v2.0 and NIST CSF 2.0 adherence</div><h2>Risk and controls by function</h2></div><button class="btn" id="back">← Browse</button></div>
     <p>Rows are CSF 2.0 subcategories; columns are the register’s threat areas with band and TRCL. Each marked cell is one risk × control pairing with its own adherence status — click it to set status, owner, target date and evidence. Percentages are the share of cells implemented or evidenced, per outcome, per function and per threat area.</p>
@@ -1862,9 +1951,11 @@ function renderHeat(){
       <div class="hm-legend"><span>low</span>${[1,2,3,4,5,6].map(i=>`<i class="s${i}"></i>`).join("")}<span>high</span>${heatMode==="resid"?`<span class="hint" style="margin-left:12px">Residual is ${pct}% below inherent across the ${heatUC==="ALL"?"register":"use case"}</span>`:""}</div>
     </div>
     <div class="hm" style="grid-template-columns: 240px repeat(${tas.length}, minmax(64px,1fr)) 72px">${head}${body}</div>
-    <p class="hint">Click a cell to see its pairings and record adherence; click a column header to open the threat area. ${adhState==="live"?"Adherence data is live.":adhState==="local"?(adhNote||"Adherence is saved in this browser."):esc(adhNote)}</p>
+    <p class="hint">Click a cell to see its pairings and record adherence; click a column header to open the threat area. ${adhState==="live"?"JSON export is the default record. Adherence data is also live.":esc(adhState==="local"?(adhNote||"JSON export is the default record. This browser holds a working copy."):(adhNote||""))}</p>
+    ${persistControlsHtml()}
     <div id="hm-detail"></div></div>`;
   $("#back").onclick = ()=>{ cur="ta"; location.hash=""; renderNav(); renderGrid(); };
+  bindPersistControls($("#main"));
   $("#main").querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{ heatMode=b.dataset.mode; renderHeat(); });
   $("#main").querySelectorAll("[data-uc]").forEach(b=>b.onclick=()=>{ heatUC=b.dataset.uc; renderHeat(); });
   $("#main").querySelectorAll("[data-heat]").forEach(b=>b.onclick=()=>{ const [ri,t]=b.dataset.heat.split("|"); const g=grid[+ri]; const x=heatCell(g.c,t);
@@ -1885,8 +1976,8 @@ window.addEventListener("hashchange", () => { const id = location.hash.slice(1);
 ensureCriTrack();
 const hx=$("#hdr-export"); if(hx) hx.onclick=()=>exportPersistBundle();
 const hi=$("#hdr-import"); if(hi) hi.onchange=()=>{ if(hi.files&&hi.files[0]) importPersistFile(hi.files[0]); hi.value=""; };
-maybeAutoBackup();
 renderNav(); renderGrid();
+placePane();
 const start = location.hash.slice(1); if(start==="CRI") renderCRI(); else if(start==="HEAT") renderHeat(); else if(start && typeOf(start)) open(start);
 </script>
 
