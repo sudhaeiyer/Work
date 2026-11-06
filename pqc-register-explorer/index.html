@@ -1,0 +1,1893 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>PQC Register Explorer</title>
+<meta name="description" content="Transition risk and remediation register for post-quantum cryptography. Browse threat areas, use-case threat models, CRI Profile adherence, and the risk heatmap.">
+<meta name="author" content="Sudha Iyer, Chief Officer — Cryptography & PKI, Citi">
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: sticky header with search; left rail of entity types; main area is either the node grid or a use-case threat-model view (architecture SVG + threat/remediation list); slide-in pane for entity detail. */
+:root{
+  --hm1:#EAF0F6; --hm2:#C9DBEA; --hm3:#9FBFDB; --hm4:#6C9CC4; --hm5:#3F76A6; --hm6:#1F5F8B;
+  --rs1:#FAEFE8; --rs2:#F2D3C2; --rs3:#E6AE92; --rs4:#D4845F; --rs5:#B85A33; --rs6:#8F3A1C;
+  --bg:#f5f6f8; --surface:#ffffff; --fg:#1b2430; --muted:#5b6675; --line:#d9dee6;
+  --accent:#1f5f8b; --accent-ink:#ffffff; --chip:#e9eef4; --zone:#eef2f6;
+  --high:#8d2f2f; --high-bg:#f6e6e6; --med:#9a6a12; --med-bg:#f8efdc; --low:#3f6b3a; --low-bg:#e6f0e3; --adv:#b23a3a;
+  --display:Georgia,"Times New Roman",serif; --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --mono:ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --hm1:#1C2733; --hm2:#243A4F; --hm3:#2E5170; --hm4:#3C6D95; --hm5:#5F96C4; --hm6:#9CC4E4;
+  --rs1:#2B1F19; --rs2:#4A2C1F; --rs3:#6B3B25; --rs4:#8F4E2E; --rs5:#BF6B43; --rs6:#F0A27A;
+  --bg:#12171e; --surface:#1a2129; --fg:#e6eaf0; --muted:#9aa5b4; --line:#2c3642;
+  --accent:#6fb1e0; --accent-ink:#0e1a26; --chip:#242e3a; --zone:#1f2731;
+  --high:#f09a9a; --high-bg:#3a1f1f; --med:#e8bb62; --med-bg:#3a2e14; --low:#a3cf9c; --low-bg:#1e3220; --adv:#f08a8a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --hm1:#1C2733; --hm2:#243A4F; --hm3:#2E5170; --hm4:#3C6D95; --hm5:#5F96C4; --hm6:#9CC4E4;
+  --rs1:#2B1F19; --rs2:#4A2C1F; --rs3:#6B3B25; --rs4:#8F4E2E; --rs5:#BF6B43; --rs6:#F0A27A;
+  --bg:#12171e; --surface:#1a2129; --fg:#e6eaf0; --muted:#9aa5b4; --line:#2c3642;
+  --accent:#6fb1e0; --accent-ink:#0e1a26; --chip:#242e3a; --zone:#1f2731;
+  --high:#f09a9a; --high-bg:#3a1f1f; --med:#e8bb62; --med-bg:#3a2e14; --low:#a3cf9c; --low-bg:#1e3220; --adv:#f08a8a; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--surface);border-bottom:1px solid var(--line);
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+header h1{font:600 20px/1.2 var(--display);margin:0;letter-spacing:-.01em}
+header h1 small{display:block;font:400 12px var(--body);color:var(--muted);margin-top:2px}
+.brand{display:flex;flex-direction:column;gap:2px;min-width:0;flex:0 1 auto}
+.byline{margin:0;font:500 12px var(--body);color:var(--muted)}
+#q{flex:1 1 220px;min-width:0;font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+#q:focus{outline:2px solid var(--accent);outline-offset:1px}
+.wrap{display:grid;grid-template-columns:200px minmax(0,1fr);min-height:calc(100% - 60px)}
+nav{border-right:1px solid var(--line);padding-block:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:10px;background:var(--surface)}
+nav button{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;background:none;border:0;color:var(--fg);font:inherit;text-align:left;padding:7px 8px;border-radius:6px;cursor:pointer}
+nav button:hover{background:var(--chip)}
+nav button[aria-current="true"]{background:var(--accent);color:var(--accent-ink)}
+nav button .n{font:500 11px var(--mono);opacity:.75}
+nav h2{font:500 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 8px 6px}
+main{padding-block:16px;padding-left:16px;padding-right:max(16px,env(safe-area-inset-right,0px));min-width:0}
+.legend{display:flex;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin:0 0 12px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;align-items:stretch}
+.node{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;text-align:left;font:inherit;color:var(--fg);display:flex;flex-direction:column;gap:4px;min-width:0}
+.node:hover,.node:focus-visible{border-color:var(--accent);outline:none;box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
+.node .id{font:500 11px var(--mono);color:var(--muted)}
+.node .t{font-weight:500;line-height:1.3}
+.node .s{color:var(--muted);font-size:12px}
+.node .chips{margin-top:auto;padding-top:6px}
+.band{display:inline-block;font:500 11px var(--mono);padding:1px 7px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.band.High,.band.VeryHigh{color:var(--high);background:var(--high-bg)} .band.Medium,.band.Moderate{color:var(--med);background:var(--med-bg)} .band.Low{color:var(--low);background:var(--low-bg)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 12px var(--mono);background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer;color:var(--fg);text-align:left;max-width:100%;white-space:normal;line-height:1.35}
+.chip:hover{border-color:var(--accent)}
+/* detail pane */
+#pane{position:fixed;top:env(safe-area-inset-top,0px);right:0;bottom:0;width:min(560px,100%);background:var(--surface);border-left:1px solid var(--line);
+  transform:translateX(102%);transition:transform .25s ease;overflow-y:auto;z-index:20;
+  padding-block:16px;padding-left:20px;padding-right:max(20px,env(safe-area-inset-right,0px))}
+#pane.open{transform:none}
+@media (prefers-reduced-motion:reduce){#pane{transition:none}}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+#pane h2,.ucv h2{font:600 22px/1.2 var(--display);margin:4px 0 2px;text-wrap:balance}
+.idl{font:500 12px var(--mono);color:var(--muted)}
+.btn{background:var(--chip);border:1px solid var(--line);border-radius:6px;color:var(--fg);font:inherit;padding:4px 10px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+h3.sec{font:500 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px}
+#pane p,.ucv p{margin:0 0 8px;max-width:70ch}
+ol.rem{padding-left:20px;margin:0}
+ol.rem li{margin:0 0 8px;max-width:70ch}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:4px 12px;font-size:13px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);padding:40px 0;text-align:center}
+/* use-case threat model view */
+.ucv figure{margin:12px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}
+.ucv svg{display:block;min-width:720px;max-width:100%;height:auto}
+.ucv figcaption{color:var(--muted);font-size:12px;margin-top:6px}
+.ucv .hint{font-size:12px;color:var(--muted)}
+.tm-zone{fill:var(--zone);stroke:none}
+.tm-zone-l{font:500 11px var(--body);letter-spacing:.08em;text-transform:uppercase;fill:var(--muted)}
+.tm-node rect{fill:var(--surface);stroke:currentColor;stroke-width:1.2;cursor:pointer}
+.tm-node text{font:12px var(--body);fill:currentColor;pointer-events:none}
+.tm-node.sel rect,.tm-edge.sel line{stroke:var(--accent);stroke-width:2.4}
+.tm-node:hover rect{stroke:var(--accent)}
+.tm-edge line{stroke:currentColor;stroke-width:1.3;cursor:pointer}
+.tm-edge .hit{stroke:transparent;stroke-width:14;cursor:pointer}
+.tm-edge text{font:11px var(--body);fill:var(--muted);pointer-events:none}
+.tm-badge rect{rx:3}
+.tm-badge text{font:500 9.5px var(--mono);pointer-events:none}
+.tm-badge.High rect{fill:var(--high-bg);stroke:var(--high);stroke-width:.8} .tm-badge.High text{fill:var(--high)}
+.tm-badge.Medium rect{fill:var(--med-bg);stroke:var(--med);stroke-width:.8} .tm-badge.Medium text{fill:var(--med)}
+.tm-adv rect{fill:none;stroke:var(--adv);stroke-dasharray:4 3;stroke-width:1.2}
+.tm-adv text{font:12px var(--body);fill:var(--adv)}
+.tm-tap{stroke:var(--adv);stroke-dasharray:4 3;stroke-width:1.2;fill:none}
+.tm-tap-l{font:10.5px var(--body);fill:var(--adv)}
+.ta-list{display:grid;gap:10px;margin-top:10px}
+.ta-card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+.ta-card .hd{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:4px}
+.ta-card .hd b{font-weight:500}
+.ta-card .why{color:var(--muted);font-size:12px;margin:0 0 6px}
+.uc-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:8px}
+/* CRI matrix */
+.matwrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;margin-top:12px}
+.mat{border-collapse:collapse;font-size:12.5px;min-width:900px}
+.mat th,.mat td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.mat th{position:sticky;top:0;background:var(--surface);font-weight:500;color:var(--muted);font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.mat th.rot{text-align:center;white-space:nowrap}
+.mat th.rot .band{display:block;margin:4px auto 0;width:max-content}
+.mat td.sub{white-space:nowrap;font-family:var(--mono);font-size:12px}
+.mat td.sub .leg{display:block;color:var(--muted);font:11px var(--body)}
+.mat td.out{min-width:260px;max-width:420px;color:var(--fg)}
+.mat td.cell{text-align:center;width:52px;font:500 12px var(--mono);color:var(--muted)}
+.mat td.cell.on{cursor:pointer}
+.mat td.cell.on.High{background:var(--high-bg);color:var(--high)} .mat td.cell.on.Medium{background:var(--med-bg);color:var(--med)}
+.mat td.cell.on:hover{outline:2px solid var(--accent);outline-offset:-2px}
+.mat tr.fnrow td{background:var(--chip);font:500 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px}
+/* adherence */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.tile .k{font:500 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tile .v{font:600 26px var(--display);font-variant-numeric:tabular-nums}
+.tile .s{font-size:11.5px;color:var(--muted)}
+.tile.warn .v{color:var(--high)}
+.pct{display:inline-flex;align-items:center;gap:8px;min-width:140px;height:14px;position:relative;background:var(--chip);border-radius:7px;overflow:hidden;vertical-align:middle}
+.pct i{display:block;height:100%;background:var(--accent);opacity:.7}
+.pct b{position:absolute;right:6px;top:-1px;font:500 11px var(--mono);color:var(--fg)}
+.pct.sm{min-width:110px;height:12px}.pct.sm b{font-size:10px;top:-1px}
+.rowpct{display:block;margin-top:4px}
+.colpct{display:block;font:500 10px var(--mono);color:var(--muted);margin-top:3px}
+.mat td.cell.on{font-size:13px}
+.st-not-started{background:var(--chip);color:var(--muted)}
+.st-in-progress{background:var(--med-bg);color:var(--med)}
+.st-implemented{background:color-mix(in srgb,var(--accent) 18%,var(--surface));color:var(--accent)}
+.st-evidenced{background:var(--low-bg);color:var(--low)}
+.st-exception{background:var(--high-bg);color:var(--high)}
+.mat td.cell.on.st-not-started,.mat td.cell.on.st-in-progress,.mat td.cell.on.st-implemented,.mat td.cell.on.st-evidenced,.mat td.cell.on.st-exception{}
+.legend .sw.st-not-started{background:var(--muted)} .legend .sw.st-in-progress{background:var(--med)} .legend .sw.st-implemented{background:var(--accent)} .legend .sw.st-evidenced{background:var(--low)} .legend .sw.st-exception{background:var(--high)}
+.muted{color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
+.editor label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);margin:10px 0}
+.editor input,.editor select,.editor textarea{font:inherit;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px}
+.editor input:focus,.editor select:focus,.editor textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.adhlist{display:flex;flex-direction:column;gap:6px}
+.adhrow{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;text-align:left;font:inherit;border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer;color:var(--fg)}
+.adhrow:hover{border-color:var(--accent)}
+.adhrow .g{font:500 13px var(--mono);text-align:center}
+.adhrow .t{font-size:13px;min-width:0}
+.adhrow .m{font-size:12px;color:var(--muted);white-space:nowrap}
+.ev-block{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:8px 0;background:var(--bg)}
+.ev-block h4{margin:0 0 6px;font:500 13px var(--body)}
+.ev-block .vd{margin:8px 0 0;padding-top:8px;border-top:1px dashed var(--line)}
+.ev-block .vd:first-of-type{border-top:0;padding-top:0}
+.ev-meta{font-size:12px;color:var(--muted);margin:0 0 6px}
+.ev-text{margin:0;white-space:pre-wrap}
+.req{color:var(--high)}
+.rem-check{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.rem-check li{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:var(--surface)}
+.rem-check li.done{background:var(--low-bg)}
+.rem-check input{margin-top:3px}
+.rem-check .meta{font:500 11px var(--mono);color:var(--muted)}
+.rem-check .txt{font-size:13px;line-height:1.35}
+.vd-map{display:flex;flex-direction:column;gap:8px}
+.vd-row{display:grid;grid-template-columns:1fr minmax(140px,180px);gap:10px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:var(--surface)}
+.vd-row .req-lvl{font:500 12px var(--mono);color:var(--muted);margin-top:2px}
+.vd-row select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);width:100%}
+.track-summary{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
+.track-summary .pill{font:500 12px var(--mono);background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+.persist-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+.persist-bar .hint{margin:0}
+
+
+.editor .vd-grid{display:flex;flex-direction:column;gap:8px;margin:8px 0 4px}
+
+/* heatmap */
+.hm-controls{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:8px 0 12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--surface)}
+.seg button{font:inherit;font-size:12.5px;padding:6px 12px;border:0;background:none;color:var(--fg);cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.hm-legend{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--muted)}
+.hm-legend i{width:18px;height:12px;display:inline-block;border-radius:2px}
+.hm{display:grid;gap:3px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;font-variant-numeric:tabular-nums}
+.hm-corner{font:500 11px var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);align-self:end;padding:0 4px 4px}
+.hm-col{font:500 12px var(--mono);background:none;border:0;color:var(--fg);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0 6px}
+.hm-col:hover{color:var(--accent)}
+.hm-fn{font:500 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--chip);padding:5px 8px;border-radius:4px;margin-top:6px}
+.hm-row{font-size:12.5px;padding:6px 8px 6px 4px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.hm-row .hm-sub{font:11px var(--mono);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm-row.hm-totrow{font-weight:500}
+.hm-cell{font:500 12px var(--mono);border:0;border-radius:4px;min-height:38px;cursor:pointer;color:var(--fg);background:var(--hm1)}
+.hm-cell.empty{background:transparent;border:1px dashed var(--line);cursor:default}
+.hm-cell:hover:not(.empty){outline:2px solid var(--accent);outline-offset:-2px}
+.hm-cell.ink-light{color:#F7F8F6}
+:root[data-theme="dark"] .hm-cell.ink-light{color:#0E1A26}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hm-cell.ink-light{color:#0E1A26}}
+.hm-tot{font:500 12px var(--mono);display:flex;align-items:center;justify-content:center;color:var(--muted);border-top:1px solid var(--line)}
+.hm .s0{background:var(--hm1);color:var(--muted)}
+.hm .s1,.hm-legend .s1{background:var(--hm1)} .hm .s2,.hm-legend .s2{background:var(--hm2)} .hm .s3,.hm-legend .s3{background:var(--hm3)} .hm .s4,.hm-legend .s4{background:var(--hm4)} .hm .s5,.hm-legend .s5{background:var(--hm5)} .hm .s6,.hm-legend .s6{background:var(--hm6)}
+.ucv.resid .hm .s1,.ucv.resid .hm-legend .s1{background:var(--rs1)} .ucv.resid .hm .s2,.ucv.resid .hm-legend .s2{background:var(--rs2)} .ucv.resid .hm .s3,.ucv.resid .hm-legend .s3{background:var(--rs3)} .ucv.resid .hm .s4,.ucv.resid .hm-legend .s4{background:var(--rs4)} .ucv.resid .hm .s5,.ucv.resid .hm-legend .s5{background:var(--rs5)} .ucv.resid .hm .s6,.ucv.resid .hm-legend .s6{background:var(--rs6)}
+@media (max-width:720px){.wrap{grid-template-columns:1fr}nav{border-right:0;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:4px;padding-block:8px}nav h2{display:none}nav button{width:auto}.kv{grid-template-columns:1fr}}
+</style>
+
+<header>
+  <div class="brand">
+    <h1>PQC Register Explorer<small>Transition risk and remediation register v1.4. Browse entities, open a use case for its threat model, track CRI Profile adherence, or read the risk heatmap.</small></h1>
+    <p class="byline">Sudha Iyer, Chief Officer — Cryptography &amp; PKI, Citi</p>
+  </div>
+  <input id="q" type="search" placeholder="Search threat areas, assets, vendors, remediations…" aria-label="Search">
+  <button class="btn" type="button" id="hdr-export" title="Download JSON backup">Backup JSON</button>
+  <label class="btn" style="display:inline-flex;align-items:center;cursor:pointer" title="Import JSON backup">Import JSON<input id="hdr-import" type="file" accept="application/json,.json" hidden></label>
+</header>
+<div class="wrap">
+  <nav id="nav" aria-label="Entity types"></nav>
+  <main id="main">
+    <div class="legend" id="legend"></div>
+    <div class="grid" id="grid"></div>
+  </main>
+</div>
+<aside id="pane" aria-live="polite"></aside>
+
+<script>
+// ---------------------------------------------------------------- data (from the register)
+const ASSETS = {
+ "A1":{t:"Company reputation",crit:"Very High",r:"Impacted by public disclosure of exfiltrated data; no dependency on data retention tenure."},
+ "A2":{t:"Customer trust",crit:"Very High",r:"Contractual and relationship goodwill; long-term account data retention applies."},
+ "A3":{t:"Personal sensitive data",crit:"Very High",r:"Customer PII, HR, medical and financial fields; long-term KYC retention."},
+ "A4":{t:"Real-time service delivery",crit:"Very High",r:"Transaction networks needing ~90%+ uptime; interruption cascades to the business."},
+ "A5":{t:"Access control and authentication systems",crit:"Very High",r:"Federation, secrets and managed authentication outside the corporate network (raised from High in v1.1)."},
+ "A6":{t:"Cloud and SaaS secrets, credentials, and token management",crit:"Very High",r:"Active session state and secrets; higher risk irrespective of retention tenure on shared platforms."},
+ "A7":{t:"Cloud and SaaS management interfaces and APIs",crit:"Very High",r:"Control planes may be ephemeral, yet access controls alone do not prevent harvest."},
+ "A8":{t:"Network connections",crit:"High",r:"Physical and logical conduits; no retention dependency; the most exposed asset at the perimeter."},
+};
+const KEYS = {
+ "K1":{t:"Private signature keys",p:"Several years, or ephemeral (HD/wallet child keys)"},
+ "K2":{t:"Public signature-verification keys",p:"Same as its private key"},
+ "K3":{t:"Symmetric authentication keys",p:"Single session (one-time use)"},
+ "K4":{t:"Private and public authentication keys",p:"2 years (public); private ideally one-time"},
+ "K5":{t:"Symmetric data encryption keys",p:"Several years (risk appetite); at rest"},
+ "K6":{t:"Symmetric key-wrapping keys (KWK and KEK)",p:"2 years"},
+ "K7":{t:"Key derivation keys (master keys)",p:"Several years"},
+ "K8":{t:"Private and public key-transport keys",p:"Several years (private); public one-time"},
+ "K9":{t:"Symmetric key-agreement keys",p:"Single session"},
+ "K10":{t:"Static key-agreement keys",p:"2 years"},
+ "K11":{t:"Ephemeral key-agreement keys",p:"Exactly one key-agreement transaction"},
+ "K12":{t:"Authorization keys",p:"Several years (public) / n.a. (private)"},
+};
+const VULNS = {
+ "V01":{t:"Classical asymmetric handshake dependencies",c:"RSA, DH or ECDH key exchange, vulnerable to retroactive decryption."},
+ "V02":{t:"Inadequate entropy sources",c:"Low-entropy key generation for medium/high-risk use cases."},
+ "V03":{t:"Hardcoded and long-lived credentials",c:"No automated rotation for API, database and system-to-system tokens."},
+ "V04":{t:"Lack of asymmetric algorithm agility",c:"Appliances, card chips, POS, ATMs, scanners and printers that cannot parse hybrid PQC suites."},
+ "V05":{t:"Legacy and weak cryptographic algorithms",c:"CA, code-signing and transaction signing on weak cryptography (NIST IR 8547)."},
+ "V06":{t:"Insufficient containment and segmentation",c:"Flat internal architectures allowing lateral movement."},
+ "V07":{t:"Supplier PQC immaturity",c:"A dependency at PQCMM Level 0–1 or without SBOM/CBOM evidence blocks the bank’s own remediation."},
+ "V08":{t:"Interoperability lock-in",c:"Counterparties that cannot negotiate hybrid/PQC force retention of legacy suites (dual-speed migration)."},
+ "V09":{t:"Shelf-life mis-scoping",c:"“Retention” read as the internal records period instead of the adversary’s external value horizon; ephemeral data under-scored."},
+};
+const VDS = {
+ "VD1":{t:"Edge delivery across CDN, WAF, load balancers, and edge TLS",tier:"High",lvl:"L2 → L3 → L4",cad:"Semi-annual + triggers",assets:["A1","A2","A4","A8"]},
+ "VD2":{t:"Cloud control planes, hypervisors, virtual switching, and workload identity",tier:"High",lvl:"L2 → L3 → L4",cad:"Semi-annual; quarterly in regulated scope",assets:["A4","A7","A8"]},
+ "VD3":{t:"Identity providers, federation, CIAM, and authorization servers",tier:"High",lvl:"L2 → L3 → L4",cad:"Semi-annual + triggers",assets:["A5","A6"]},
+ "VD4":{t:"Key, secrets, and token management with KMS, HSM-as-a-service, and vaults",tier:"High",lvl:"L2 → L3 → L4 (L5 preferred)",cad:"Semi-annual + triggers",assets:["A6","A7"]},
+ "VD5":{t:"Service mesh, container platforms, and TLS, SSH, and IPsec libraries and appliances",tier:"High",lvl:"L2 → L3 → L4",cad:"Semi-annual or each material release",assets:["A4","A8"]},
+ "VD6":{t:"Certificate authorities, certificate lifecycle, and code signing",tier:"High",lvl:"L2 → L3 → L4",cad:"Semi-annual + triggers",assets:["A1","A5","A6"]},
+ "VD7":{t:"Field hardware including POS, ATMs, smartcards, HSM appliances, scanners, and printers",tier:"High",lvl:"L1 → L2 → L3",cad:"Semi-annual; each firmware release",assets:["A2","A4"]},
+ "VD8":{t:"Counterparties and market infrastructures spanning VPN peers, interbank messaging, payment networks, and API consumers",tier:"High",lvl:"Readiness % per use case",cad:"Quarterly readiness survey until SM2",assets:["A1","A2","A4","A8"]},
+ "VD9":{t:"API gateways, integration platforms, iPaaS, and API management",tier:"High",lvl:"L2 → L3 → L4",cad:"Semi-annual + triggers",assets:["A1","A2","A4","A6","A8"]},
+ "VD10":{t:"Network and segmentation with SD-WAN, micro-segmentation, and policy engines",tier:"Moderate",lvl:"L2 → L3",cad:"Annual + triggers",assets:["A8"]},
+ "VD11":{t:"Entropy and RNG, TPM and device attestation, and client platforms",tier:"Moderate",lvl:"L2 → L3",cad:"Annual + triggers",assets:["A5","A6"]},
+ "VD12":{t:"DevOps and CI/CD, code repositories, and CBOM discovery tooling",tier:"Moderate",lvl:"L2 → L3",cad:"Annual + triggers",assets:["A6","A7"]},
+};
+const TAS = {
+ "TA1":{t:"External TLS, IPsec, VPN, and SSH handshake decryption",sub:"Store now, harvest now, decrypt later",band:"High",trcl:8,prob:"VERY HIGH",imp:"VERY HIGH",
+   driver:"VD.1/VD.5 at L2 for TLS; VD.8 partner peers not ready",sm:"SM1 end-2025 · SM2 end-2028 · SM3 end-2031 (website example)",wave:"Wave 2 now; Wave 3 before 2030/2031 sunsets",
+   vulns:["V01","V04","V05","V07","V08","V09"],assets:["A1","A2","A3","A4","A8"],keys:["K11","K10","K5"],vds:["VD1","VD5","VD6","VD8"],
+   reg:"CRI/CSF PR.DS-01, PR.DS-02 · DORA Art 6, 9, 28–30",
+   diag:"Adversaries record encrypted transaction and trading traffic at the edge; captured packets expose long-term high-value data regardless of the bank’s retention schedule.",
+   rem:["Enforce hybrid TLS 1.3 (hybrid-preferred) on load balancers, CDN, gateways and WAFs; classical fallback only for inventoried VD.8 counterparties under an exception expiring at SM2, logged and downgrade-protected.",
+        "Deploy ephemeral PQC key agreement: approved hybrid ML-KEM (currently X25519MLKEM768 for TLS 1.3; SSH / IKEv2 equivalents as standardised), tracked for crypto-agility.",
+        "Strict transaction limitation: ephemeral keys used for exactly one key-agreement transaction (perfect forward secrecy)."]},
+ "TA2":{t:"Service-mesh exfiltration in as-a-service designs",sub:"East-west traffic inside flat virtual networks",band:"Medium",trcl:5,prob:"MEDIUM",imp:"HIGH",
+   driver:"VD.5 mesh vendor evidence (L2 → L4); TRCL held at top of band while VD.5 is below L2",sm:"Internal: not gated by sector dates; Wave 2 now",wave:"Wave 2",
+   vulns:["V01","V05","V07"],assets:["A2","A3","A4","A5","A8"],keys:["K9","K1","K2"],vds:["VD5","VD2","VD4"],
+   reg:"CRI/CSF PR.DS-01, PR.PT-04 · DORA Art 6, 28–30",
+   diag:"Once the cloud edge is breached, classical or ungoverned mTLS between microservices lets all east-west data, including database replication, be exfiltrated and decrypted. Third-party mesh offerings must not be assumed well-governed without a key inventory.",
+   rem:["PQC-enabled service mesh: transition mesh TLS to hybrid PQC.",
+        "Infrastructure-as-code policy: codify cryptographic profiles and automated key rotation, centrally governed.",
+        "Key lifetime restriction: 24-hour maximum for symmetric authentication and session-level channel keys between containers; at-rest cryptoperiods stay per Section 2.2."]},
+ "TA3":{t:"Core identity provider cryptographic interception",sub:"SAML, OIDC, OAuth, and JWT flows on classical public-key cryptography",band:"High",trcl:8,prob:"VERY HIGH",imp:"VERY HIGH",
+   driver:"Transport Medium; PQC token signing High (standards and VD.3 readiness)",sm:"Customer-authentication use case dates (TBC by forum); SM3 before 2030/2031",wave:"Wave 2 now (transport); later SM1 for PQC signatures",
+   vulns:["V01","V05","V07","V09"],assets:["A1","A2","A5","A6"],keys:["K4","K12","K2","K1"],vds:["VD3","VD4","VD6"],
+   reg:"CRI/CSF PR.AC-01, PR.AC-03 · DORA Art 6, 9, 28–30",
+   diag:"Quantum-enabled sniffing of directory authentication exchanges compromises the IdP’s long-term root keys and allows unauthorised token generation.",
+   rem:["IdP hybrid transport upgrade: enforce hybrid TLS 1.3 on identity endpoints.",
+        "Quantum-safe digital signatures (ML-DSA / SLH-DSA) for token signing, readiness-gated on JOSE/COSE and XML-DSig registrations, VD.3 at L2 and relying-party verification; dual-signed tokens during coexistence.",
+        "Active token encryption: encrypt sensitive JWT claims with symmetric keys at SP 800-57 / SP 800-131A strength."]},
+ "TA4":{t:"Harvesting of long-lived and static workload credentials",sub:"CI/CD, container-to-database, and machine identities",band:"High",trcl:7,prob:"HIGH",imp:"HIGH",
+   driver:"VD.6 CA/CLM and relying-party ML-DSA verification (TRCL 8 while VD.6 is below L2)",sm:"Internal: Wave 1 (ephemeral identities), Wave 2 (PQC chains)",wave:"Wave 1 / Wave 2",
+   vulns:["V03","V05","V07"],assets:["A5","A6","A7","A8"],keys:["K4","K12","K2","K1"],vds:["VD6","VD4","VD2","VD12"],
+   reg:"CRI/CSF PR.AC-01, PR.DS-02 · DORA Art 9, 28–30",
+   diag:"Static client certificates and secrets exfiltrated from repositories or memory allow permanent spoofing of high-privilege service accounts without detection.",
+   rem:["Transition to ephemeral identities: deprecate static service certificates; short-lived, one-time workload identity certificates.",
+        "Uplift private CA with PQC-signed chains; hybrid or dual chains during coexistence; close only when VD.6 and all relying parties verify PQC chains (exception expiring at SM2).",
+        "Short-lived keys: 24-hour maximum for operational symmetric authentication and session-level data encryption keys in containers."]},
+ "TA5":{t:"Over-scoped authorization tokens and scopes",sub:"Broad tokens issued to ease integration",band:"Medium",trcl:5,prob:"MEDIUM",imp:"HIGH",
+   driver:"Scoping is administrative (Low); PQC signing shares TA.3’s readiness dependency",sm:"Customer-authentication use case dates (TBC)",wave:"Wave 1 no-regret (scoping); Wave 2 (signing)",
+   vulns:["V05","V06"],assets:["A2","A3","A6"],keys:["K12","K2","K1"],vds:["VD3","VD9","VD4"],
+   reg:"CRI/CSF PR.AC-04 · DORA Art 9, 28–30",
+   diag:"Intercepted over-scoped tokens give wide lateral read/write permissions across decoupled environments.",
+   rem:["Enforce strict least-privilege scoping to targeted audience domains.",
+        "Cryptographic integrity checks: sign authorization payloads with approved PQC signature algorithms per NIST IR 8547, SHA-2/SHA-3 per SP 800-131A; readiness-gated on VD.3.",
+        "Token confidentiality: encrypt SAML/JWT contents with a symmetric data encryption key when sensitive scopes are present."]},
+ "TA6":{t:"External API gateway decryption",sub:"Public API routes feeding core transaction systems",band:"High",trcl:7,prob:"VERY HIGH",imp:"HIGH",
+   driver:"Many heterogeneous VD.8 consumers — complexity, not risk, binds (TRCL 8 while any VD.9 supplier is below L2)",sm:"SM1 end-2025 · SM2 end-2028 · SM3 end-2031 (as TA.1)",wave:"Wave 2 now",
+   vulns:["V01","V04","V05","V07","V08","V09"],assets:["A1","A2","A4","A6","A8"],keys:["K2","K1","K11","K5"],vds:["VD9","VD1","VD8","VD6"],
+   reg:"CRI/CSF PR.DS-01, PR.DS-02 · DORA Art 6, 9, 28–30",
+   diag:"Routers sweeping API endpoints over classical TLS retain traffic, compromising API keys, parameters and payload schemas.",
+   rem:["API gateway hybrid handoff: prefer the approved hybrid key-exchange group; hybrid-only for new API versions from SM2; existing consumers hybrid-preferred with expiring exceptions until SM3.",
+        "Inject hybrid key exchange via ephemeral key agreement keys.",
+        "Strict ephemeral bounds per NIST SP 800-56A: keys discarded after one key-agreement transaction."]},
+ "TA7":{t:"Flat non-segmented cloud routing and multi-tenant co-location",sub:"Neighbour probing at hypervisor and virtual-switch layers",band:"Medium",trcl:5,prob:"MEDIUM",imp:"HIGH",
+   driver:"Segmentation available now; PQC-signed policy gated on VD.2/VD.10",sm:"Not gated by sector dates; deployment-model change is a reassessment trigger",wave:"Wave 1 no-regret; Wave 2 (signed policy)",
+   vulns:["V06","V07"],assets:["A2","A3","A4","A7","A8"],keys:["K5","K6"],vds:["VD2","VD10","VD4"],
+   reg:"CRI/CSF PR.PT-04, PR.DS-01 · DORA Art 9, 28–30",
+   diag:"Weak logical segmentation lets a compromised neighbouring tenant perform side-channel attacks, sniffing or co-residence probing.",
+   rem:["Micro-segmentation: restrict flows strictly between validated boundaries.",
+        "Inter-segment payload encryption with higher-order symmetric data encryption keys.",
+        "Policy integrity verification with PQC-signed manifests once VD.2 and VD.10 evidence L2 for signed policy; until then an exception with remediations 1–2 as compensating controls."]},
+ "TA8":{t:"Captured session-token replay hijacking",sub:"Replay from another device bypasses static MFA",band:"High",trcl:6,prob:"HIGH",imp:"HIGH",
+   driver:"Binding available now; PQC-capable attestation (VD.11) not yet",sm:"Customer-authentication use case dates (TBC)",wave:"Wave 1 no-regret; Wave 2 (PQC-signed state)",
+   vulns:["V05","V09"],assets:["A2","A5","A6"],keys:["K3","K4"],vds:["VD3","VD11","VD1"],
+   reg:"CRI/CSF PR.AC-03, DE.CM-01 · DORA Art 9, 28–30",
+   diag:"An exfiltrated session cookie or token replayed from a separate device hijacks the authenticated session.",
+   rem:["Short-lived bound sessions: narrow operational windows.",
+        "Session state integrity and confidentiality: PQC-signed session state, encrypted local stores; RFC 9334 attestation evidence at session establishment.",
+        "Active device binding: cryptographic token binding (DPoP RFC 9449 / device-key-bound, TPM-backed); IP and fingerprint as risk signals only."]},
+ "TA9":{t:"Payment terminal and card cryptographic lifecycle lock-in for EMV and PIN",sub:"Ten-year terminal lifecycles with card-side cryptography set by EMVCo and the schemes",band:"Medium",trcl:5,prob:"HIGH",imp:"MEDIUM",
+   driver:"Start now under the long-dependency rule (Prioritising paper Migration Time 3): VD.7 firmware at L0–L1; EMV PQC specification not yet published",sm:"SM1 at EMV / scheme / PCI PQC specifications · SM2 at procurement mandate · SM3 at estate refresh ≤ 2035",wave:"Wave 1 (symmetric uplift, procurement); Wave 2 (transport, RKI); Wave 3 (estate refresh)",
+   vulns:["V04","V05","V07","V08"],assets:["A2","A4","A8"],keys:["K2","K1","K5","K6","K7","K8"],vds:["VD7","VD8","VD4","VD9"],
+   reg:"CRI/CSF PR.DS-01, PR.DS-02, PR.AC-01 · DORA Art 9, 28–30 · PCI DSS, PCI PIN, PCI PTS POI",
+   diag:"EMV offline card authentication and scheme certificate chains rely on RSA; remote key injection (TR-34) transports terminal keys under RSA/ECC; PIN and P2PE use DUKPT symmetric keys with residual TDEA in older estates. Harvested traffic and card data plus a CRQC allow forgery of card authentication and recovery of transported keys. No single bank can migrate alone: the dual-speed migration risk in its purest form.",
+   rem:["Symmetric first: eliminate TDEA; AES-128/256 DUKPT with TR-31 key blocks; raise base-derivation and working-key strengths (no-regret Wave 1).",
+        "Transport and device identity: TA.1 remediations on terminal-to-acquirer links; terminal certificates from a PQC-capable CA as firmware allows; migrate RKI to hybrid/PQC key transport when the TR-34 revision and HSM support exist, meanwhile under exception with secured KIF, shortened BDK lifetimes and key-block binding.",
+        "Lifecycle and procurement: every new terminal at PQCMM L2+ from SM2; estate refresh mapped to SM3 (≤ 2035); participate in EMVCo, PCI SSC and scheme PQC working groups; EMV PQC specification is the SM1 readiness indicator."]},
+};
+const MILESTONES = {
+ "PM1":{t:"Programme milestone 1: plan and prepare",d:"List key types; risk remediation analysis; determine band and TRCL; governance to find weak cryptography; PQC pilots; identify refactoring. Vendor: inventory VD.1–12, assign PKIC tier, vendor survey, required levels, exceptions, VD.8 readiness, record SM dates.",wave:"Wave 1 Foundations (now–2027)",sm:"Supports SM1 (readiness: PQC support in dependencies)"},
+ "PM2":{t:"Programme milestone 2: execute",d:"Implement remediation and upliftment; improve governance incrementally; isolate areas needing refactoring. Vendor: close dependent remediations only on evidence; re-run diagnosis on triggers; report metrics; expire exceptions by SM2.",wave:"Wave 2 PQC Transition (2025–2031)",sm:"SM1 execution share; SM2 Sunset Initiation (share depending on quantum-vulnerable cryptography)"},
+ "PM3":{t:"Programme milestone 3: execute and retrigger",d:"Lifecycle and governance upliftment; deprecate legacy patterns; redefine the baseline. Vendor: L4 evidence (CBOM, zero-legacy, hybrid) before switch-off; retire exceptions; fold reassessment into BAU third-party risk (DORA Art 28–30).",wave:"Wave 3 Cleanup (2029–2035)",sm:"SM3 End of Backward Compatibility (share quantum-safe; residual exceptions mitigated)"},
+ "SM1":{t:"Sector milestone 1: PQC introduction",d:"Point by which institutions can begin deploying PQC in the use case. Readiness indicator: PQC support among relevant vendors, platforms and counterparties.",wave:"Wave 1 / Wave 2",sm:"Website example: end-2025"},
+ "SM2":{t:"Sector milestone 2: sunset initiation",d:"After this point new projects are no longer built on quantum-vulnerable cryptography for the use case. Register rule: High-band supplier exceptions expire no later than SM2.",wave:"Wave 2",sm:"Website example: end-2028"},
+ "SM3":{t:"Sector milestone 3: end of backward compatibility",d:"Quantum-vulnerable cryptography decommissioned for the use case; remaining exceptions carry mitigations including against downgrade. A threat area closes here, not on PQC introduction.",wave:"Wave 3",sm:"Website example: end-2031"},
+};
+const USECASES = {
+ "UC1":{t:"Public-facing website, the QSFF-Bank illustrative case",tas:["TA1","TA5","TA6","TA8"],vds:["VD1","VD6","VD11","VD3","VD8","VD9","VD4","VD5"],
+   d:"Tokens for bank-to-customer, SSH for administrative work, TLS/IPSEC/VPN partner connectivity. Scored on internal retention these flows would be ephemeral and TA.1, TA.6 and TA.8 would fall to Medium; scored on external value after harvest they sit at TRCL 8, 7 and 6. Prioritising paper: Quantum Risk Medium (3/2/2), Migration Time Low (1/1/1), Migration Priority Medium."},
+ "UC2":{t:"Point of sale across the QSFF-Bank acquirer estate",tas:["TA1","TA4","TA9"],vds:["VD7","VD8","VD4","VD9","VD1","VD6"],
+   d:"PCI PTS terminals with EMV chip and contactless, connected to the acquirer host via a payment gateway over TLS/IPsec; PIN and card data under DUKPT/P2PE; keys loaded by remote key injection from the bank’s HSM; seven-to-ten-year refresh cycle. Prioritising paper: Quantum Risk Medium (shelf life 3, exposure 3, severity 1), Migration Time High (3/3/3), Migration Priority High. Register: band Medium, TRCL 5, start now under the long-dependency rule."},
+ "UC3":{t:"Managed service providers for cloud and SaaS in the QSFF-Bank estate",tas:["TA1","TA2","TA3","TA4","TA7"],vds:["VD2","VD1","VD5","VD4","VD3","VD9","VD12"],
+   d:"Hyperscale cloud (IaaS/PaaS, managed container platform and mesh), SaaS for CRM/HR/collaboration and workforce identity federation, provider-managed KMS/HSM. Under shared responsibility the provider implements and schedules most of the cryptography, so the bank remediates through what the provider offers and when. No new threat area: key custody, provider roadmaps and exit are carried by V_PQC_07/08 and the vendor ledger. Not scored in the Prioritising paper; register scores TA.1 and TA.3 at TRCL 8, TA.4 at 7, TA.2 and TA.7 at 5. Key controls: hybrid-preferred TLS to every provider endpoint, customer-managed keys with bank-controlled KEKs (so exit does not depend on provider timelines), hybrid/PQC key import when offered, provider evidence by third-party assessment or certification."},
+};
+
+// ---------------------------------------------------------------- CRI Profile v2.0 / NIST CSF 2.0 mapping
+const CRI = {
+"GV.RM-06": {
+"t": "A standardized method for calculating, documenting, categorizing and prioritizing cybersecurity risks is established.",
+"fn": "Govern",
+"cat": "Risk Management Strategy",
+"legacy": null,
+"tas": [
+"TA1",
+"TA2",
+"TA3",
+"TA4",
+"TA5",
+"TA6",
+"TA7",
+"TA8",
+"TA9"
+],
+"controls": [
+[
+"S",
+"§1.1 Quantum Risk band (E, SL, S) and TRCL 0–8"
+],
+[
+"S",
+"§1.2 shelf-life read on the adversary’s clock"
+],
+[
+"S",
+"§1.3 timing = earlier of TRCL urgency and Sector Milestone"
+]
+],
+"ev": "Register §1.1–1.3; threat-area tables (Calculated Risk row)"
+},
+"GV.RM-03": {
+"t": "Cybersecurity risk management activities and outcomes are included in enterprise risk management processes.",
+"fn": "Govern",
+"cat": "Risk Management Strategy",
+"legacy": null,
+"tas": [
+"TA1",
+"TA3",
+"TA4",
+"TA6",
+"TA8"
+],
+"controls": [
+[
+"S",
+"High band requires executive sign-off and budget allocation"
+],
+[
+"S",
+"§2.3.5 exceptions escalate to executive review"
+]
+],
+"ev": "Band definitions §1.1; exception record Appendix C.2"
+},
+"GV.OV-01": {
+"t": "Cybersecurity risk management strategy outcomes are reviewed to inform and adjust strategy and direction.",
+"fn": "Govern",
+"cat": "Oversight",
+"legacy": null,
+"tas": [
+"TA1",
+"TA2",
+"TA3",
+"TA4",
+"TA5",
+"TA6",
+"TA7",
+"TA8",
+"TA9"
+],
+"controls": [
+[
+"S",
+"§2.3.5 leadership metrics at each Programme Milestone review"
+],
+[
+"S",
+"§5.2 Sector Milestone indicators SM1–SM3"
+]
+],
+"ev": "Metric set §2.3.5; roadmap §5"
+},
+"GV.SC-04": {
+"t": "Suppliers are known and prioritized by criticality.",
+"fn": "Govern",
+"cat": "Supply Chain Risk Management",
+"legacy": null,
+"tas": [
+"TA1",
+"TA2",
+"TA3",
+"TA4",
+"TA5",
+"TA6",
+"TA7",
+"TA8",
+"TA9"
+],
+"controls": [
+[
+"S",
+"§2.3.1 PKIC supplier risk tiers; High floor on High-band threat areas"
+],
+[
+"S",
+"§2.3.2 dependency classes VD.1–VD.12"
+]
+],
+"ev": "Vendor ledger §2.3; Appendix C.1 inventory record"
+},
+"GV.SC-05": {
+"t": "Requirements to address cybersecurity risks in supply chains are established, prioritized and integrated into contracts.",
+"fn": "Govern",
+"cat": "Supply Chain Risk Management",
+"legacy": null,
+"tas": [
+"TA1",
+"TA3",
+"TA4",
+"TA6",
+"TA9"
+],
+"controls": [
+[
+"S",
+"Required PQCMM level per Sector Milestone (L2 → L3 → L4)"
+],
+[
+"TA9",
+3
+],
+[
+"S",
+"PKIC example contract clauses; DORA Art 30 provisions"
+]
+],
+"ev": "§2.3.2 required-level column; Appendix B procurement steps"
+},
+"GV.SC-06": {
+"t": "Planning and due diligence are performed to reduce risks before entering into formal supplier relationships.",
+"fn": "Govern",
+"cat": "Supply Chain Risk Management",
+"legacy": null,
+"tas": [
+"TA1",
+"TA2",
+"TA3",
+"TA4",
+"TA6",
+"TA7",
+"TA9"
+],
+"controls": [
+[
+"S",
+"PKIC vendor survey and current PQCMM level at onboarding"
+],
+[
+"S",
+"Assurance method recorded: self-assessment, third-party assessment, certification"
+]
+],
+"ev": "Appendix C.1 fields: current level, assurance method, report scope"
+},
+"GV.SC-07": {
+"t": "The risks posed by a supplier, its products and services are understood, recorded, prioritized, assessed, responded to and monitored over the relationship.",
+"fn": "Govern",
+"cat": "Supply Chain Risk Management",
+"legacy": null,
+"tas": [
+"TA1",
+"TA2",
+"TA3",
+"TA4",
+"TA5",
+"TA6",
+"TA7",
+"TA8",
+"TA9"
+],
+"controls": [
+[
+"S",
+"§2.3.4 reassessment triggers including mixed-maturity integration"
+],
+[
+"S",
+"§2.3.5 exceptions with expiry no later than SM2"
+],
+[
+"S",
+"TRCL +1 in-band rule for High-tier suppliers below level"
+]
+],
+"ev": "Reassessment cadence per tier; exception record Appendix C.2"
+},
+"GV.SC-10": {
+"t": "Cybersecurity supply chain risk management plans include provisions for activities after the conclusion of a partnership or service agreement.",
+"fn": "Govern",
+"cat": "Supply Chain Risk Management",
+"legacy": null,
+"tas": [
+"TA4",
+"TA7"
+],
+"controls": [
+[
+"TA7",
+2
+],
+[
+"TA4",
+3
+],
+[
+"S",
+"Appendix B A.3: bank-held KEKs so exit is independent of provider timelines"
+]
+],
+"ev": "Appendix B A.3 remediation checklist; DORA Art 28 exit strategies"
+},
+"ID.AM-07": {
+"t": "Inventories of data and corresponding metadata for designated data types are maintained.",
+"fn": "Identify",
+"cat": "Asset Management",
+"legacy": null,
+"tas": [
+"TA1",
+"TA2",
+"TA3",
+"TA5",
+"TA6",
+"TA7",
+"TA8"
+],
+"controls": [
+[
+"S",
+"§2.1 critical information assets with criticality and rationale"
+],
+[
+"S",
+"External shelf-life recorded per asset and supplier (data lifespan field)"
+]
+],
+"ev": "Asset ledger §2.1; Appendix C.1 data lifespan guidance"
+},
+"ID.AM-08": {
+"t": "Systems, hardware, software, services and data are managed throughout their life cycles.",
+"fn": "Identify",
+"cat": "Asset Management",
+"legacy": null,
+"tas": [
+"TA1",
+"TA2",
+"TA4",
+"TA9"
+],
+"controls": [
+[
+"S",
+"§2.2 key inventory with recommended cryptoperiods"
+],
+[
+"TA9",
+3
+],
+[
+"TA4",
+1
+]
+],
+"ev": "Key inventory §2.2; Appendix B key ledgers per use case"
+},
+"ID.RA-01": {
+"t": "Vulnerabilities in assets are identified, validated and recorded.",
+"fn": "Identify",
+"cat": "Risk Assessment",
+"legacy": null,
+"tas": [
+"TA1",
+"TA2",
+"TA3",
+"TA4",
+"TA5",
+"TA6",
+"TA7",
+"TA8",
+"TA9"
+],
+"controls": [
+[
+"S",
+"§3 vulnerability index V_PQC_01–09"
+],
+[
+"S",
+"PM1 governance: automated discovery of certificates, cipher suites, SSH keys"
+]
+],
+"ev": "Section 3; Appendix B governance steps"
+},
+"ID.RA-03": {
+"t": "Internal and external threats to the organization are identified and recorded.",
+"fn": "Identify",
+"cat": "Risk Assessment",
+"legacy": null,
+"tas": [
+"TA1",
+"TA2",
+"TA3",
+"TA4",
+"TA5",
+"TA6",
+"TA7",
+"TA8",
+"TA9"
+],
+"controls": [
+[
+"S",
+"§4 nine threat areas with granular diagnosis"
+],
+[
+"S",
+"V_PQC_08 interoperability lock-in; V_PQC_09 shelf-life mis-scoping as named threats to the method"
+]
+],
+"ev": "Section 4 diagnosis paragraphs"
+},
+"ID.RA-05": {
+"t": "Threats, vulnerabilities, likelihoods and impacts are used to understand inherent risk and inform risk response prioritization.",
+"fn": "Identify",
+"cat": "Risk Assessment",
+"legacy": null,
+"tas": [
+"TA1",
+"TA2",
+"TA3",
+"TA4",
+"TA5",
+"TA6",
+"TA7",
+"TA8",
+"TA9"
+],
+"controls": [
+[
+"S",
+"Probability × Impact rows; band and TRCL per threat area"
+],
+[
+"S",
+"Long-dependency start rule (Medium band, start now)"
+]
+],
+"ev": "Threat-area tables; §1.1 TRCL rule"
+},
+"ID.RA-07": {
+"t": "Changes and exceptions are managed, assessed for risk impact, recorded and tracked.",
+"fn": "Identify",
+"cat": "Risk Assessment",
+"legacy": null,
+"tas": [
+"TA1",
+"TA2",
+"TA3",
+"TA4",
+"TA6",
+"TA7",
+"TA9"
+],
+"controls": [
+[
+"S",
+"§2.3.5 exception governance: gap, risk, compensating controls, owner, expiry, escalation"
+],
+[
+"TA1",
+1
+],
+[
+"TA6",
+1
+]
+],
+"ev": "Appendix C.2; exception-tracked classical fallback in TA.1 and TA.6"
+},
+"ID.RA-10": {
+"t": "Critical suppliers are assessed prior to acquisition.",
+"fn": "Identify",
+"cat": "Risk Assessment",
+"legacy": null,
+"tas": [
+"TA1",
+"TA3",
+"TA4",
+"TA6",
+"TA9"
+],
+"controls": [
+[
+"S",
+"Required PQCMM L2 before a dependent remediation is closed at SM1"
+],
+[
+"TA9",
+3
+]
+],
+"ev": "§2.3.2; Appendix B A.2 procurement requirement"
+},
+"ID.IM-01": {
+"t": "Improvements are identified from evaluations.",
+"fn": "Identify",
+"cat": "Improvement",
+"legacy": null,
+"tas": [
+"TA1",
+"TA2",
+"TA3",
+"TA4",
+"TA5",
+"TA6",
+"TA7",
+"TA8",
+"TA9"
+],
+"controls": [
+[
+"S",
+"Programme Milestone 3: redefine the security baseline, re-trigger backlog"
+],
+[
+"S",
+"V_PQC_09 governance check: no threat area down-scored on a retention schedule"
+]
+],
+"ev": "§5.1 PM3; §1.2 controls (a)–(d)"
+},
+"PR.AA-01": {
+"t": "Identities and credentials for authorized users, services and hardware are managed by the organization.",
+"fn": "Protect",
+"cat": "Identity Management, Authentication and Access Control",
+"legacy": "PR.AC-01",
+"tas": [
+"TA3",
+"TA4"
+],
+"controls": [
+[
+"TA4",
+1
+],
+[
+"TA4",
+2
+],
+[
+"TA3",
+2
+]
+],
+"ev": "Short-lived workload identities; PQC-signed chains; PQC token signing readiness-gated"
+},
+"PR.AA-03": {
+"t": "Users, services and hardware are authenticated.",
+"fn": "Protect",
+"cat": "Identity Management, Authentication and Access Control",
+"legacy": "PR.AC-03",
+"tas": [
+"TA3",
+"TA8",
+"TA9"
+],
+"controls": [
+[
+"TA3",
+1
+],
+[
+"TA8",
+3
+],
+[
+"TA9",
+2
+]
+],
+"ev": "Hybrid TLS on IdP endpoints; cryptographic token binding; terminal device certificates"
+},
+"PR.AA-05": {
+"t": "Access permissions, entitlements and authorizations are defined in a policy, managed, enforced and reviewed, incorporating least privilege and separation of duties.",
+"fn": "Protect",
+"cat": "Identity Management, Authentication and Access Control",
+"legacy": "PR.AC-04",
+"tas": [
+"TA5"
+],
+"controls": [
+[
+"TA5",
+1
+],
+[
+"TA5",
+2
+],
+[
+"TA5",
+3
+]
+],
+"ev": "Least-privilege scoping; PQC-signed authorization payloads; token confidentiality"
+},
+"PR.DS-01": {
+"t": "The confidentiality, integrity and availability of data-at-rest are protected.",
+"fn": "Protect",
+"cat": "Data Security",
+"legacy": "PR.DS-01",
+"tas": [
+"TA2",
+"TA3",
+"TA5",
+"TA7",
+"TA8",
+"TA9"
+],
+"controls": [
+[
+"TA7",
+2
+],
+[
+"TA3",
+3
+],
+[
+"TA5",
+3
+],
+[
+"TA8",
+2
+],
+[
+"TA9",
+1
+]
+],
+"ev": "Envelope encryption under bank-held KEKs; AES-256 token and session-store encryption; AES DUKPT"
+},
+"PR.DS-02": {
+"t": "The confidentiality, integrity and availability of data-in-transit are protected.",
+"fn": "Protect",
+"cat": "Data Security",
+"legacy": "PR.DS-02",
+"tas": [
+"TA1",
+"TA2",
+"TA4",
+"TA6",
+"TA9"
+],
+"controls": [
+[
+"TA1",
+1
+],
+[
+"TA1",
+2
+],
+[
+"TA1",
+3
+],
+[
+"TA2",
+1
+],
+[
+"TA6",
+1
+],
+[
+"TA6",
+2
+],
+[
+"TA6",
+3
+],
+[
+"TA9",
+2
+]
+],
+"ev": "Hybrid TLS 1.3 / IKEv2 / SSH; approved hybrid ML-KEM; one key-agreement transaction per ephemeral key"
+},
+"PR.DS-11": {
+"t": "Backups of data are created, protected, maintained and tested.",
+"fn": "Protect",
+"cat": "Data Security",
+"legacy": null,
+"tas": [
+"TA7"
+],
+"controls": [
+[
+"S",
+"Provider replication and backups covered under bank-held KEKs (Appendix B A.3)"
+]
+],
+"ev": "Appendix B A.3 key ledger: Symmetric Data Encryption Keys, KWK"
+},
+"PR.PS-01": {
+"t": "Configuration management practices are established and applied.",
+"fn": "Protect",
+"cat": "Platform Security",
+"legacy": null,
+"tas": [
+"TA1",
+"TA2",
+"TA6"
+],
+"controls": [
+[
+"TA2",
+2
+],
+[
+"TA1",
+1
+],
+[
+"TA6",
+1
+]
+],
+"ev": "IaC cryptographic profiles; hybrid-preferred TLS policy; downgrade protection"
+},
+"PR.PS-02": {
+"t": "Software is maintained, replaced and removed commensurate with risk.",
+"fn": "Protect",
+"cat": "Platform Security",
+"legacy": null,
+"tas": [
+"TA1",
+"TA2",
+"TA4",
+"TA6"
+],
+"controls": [
+[
+"TA1",
+2
+],
+[
+"S",
+"PQCMM L3 crypto-agility required of libraries and mesh (VD.5) by SM2"
+],
+[
+"S",
+"SM3: classical suites disabled"
+]
+],
+"ev": "Crypto-agility clause in TA.1 remediation 2; §5.2 PM3"
+},
+"PR.PS-03": {
+"t": "Hardware is maintained, replaced and removed commensurate with risk.",
+"fn": "Protect",
+"cat": "Platform Security",
+"legacy": null,
+"tas": [
+"TA9"
+],
+"controls": [
+[
+"TA9",
+3
+],
+[
+"S",
+"VD.7 reassessment at each firmware release; estate refresh mapped to SM3 ≤ 2035"
+]
+],
+"ev": "TA.9; Appendix B A.2 build-vs-buy per terminal model"
+},
+"PR.PS-06": {
+"t": "Secure software development practices are integrated and their performance monitored throughout the life cycle.",
+"fn": "Protect",
+"cat": "Platform Security",
+"legacy": null,
+"tas": [
+"TA4"
+],
+"controls": [
+[
+"TA4",
+2
+],
+[
+"S",
+"Code-signing custody in VD.6 / VD.12; CI/CD credentials rotated"
+]
+],
+"ev": "TA.4; VD.12 DevOps class"
+},
+"PR.IR-01": {
+"t": "Networks and environments are protected from unauthorized logical access and usage.",
+"fn": "Protect",
+"cat": "Technology Infrastructure Resilience",
+"legacy": "PR.PT-04",
+"tas": [
+"TA2",
+"TA7"
+],
+"controls": [
+[
+"TA7",
+1
+],
+[
+"TA7",
+2
+],
+[
+"TA7",
+3
+],
+[
+"TA2",
+3
+]
+],
+"ev": "Micro-segmentation; inter-segment encryption; PQC-signed policy manifests when VD.2/VD.10 at L2"
+},
+"DE.CM-01": {
+"t": "Networks and network services are monitored to find potentially adverse events.",
+"fn": "Detect",
+"cat": "Continuous Monitoring",
+"legacy": "DE.CM-01",
+"tas": [
+"TA1",
+"TA6",
+"TA8"
+],
+"controls": [
+[
+"TA1",
+1
+],
+[
+"TA6",
+1
+],
+[
+"TA8",
+3
+]
+],
+"ev": "Every classical negotiation logged as the SM2 indicator; session context-shift detection"
+},
+"DE.CM-09": {
+"t": "Computing hardware and software, runtime environments and their data are monitored to find potentially adverse events.",
+"fn": "Detect",
+"cat": "Continuous Monitoring",
+"legacy": null,
+"tas": [
+"TA2",
+"TA4",
+"TA9"
+],
+"controls": [
+[
+"S",
+"CBOM / SBOM evidence from VD.5 and VD.6; automated scanning of certificates, cipher suites and SSH keys"
+],
+[
+"S",
+"Terminal estate inventory of firmware and PIN-encryption algorithms"
+]
+],
+"ev": "§2.3 evidence status fields; Appendix B governance steps"
+},
+"RS.MI-01": {
+"t": "Incidents are contained.",
+"fn": "Respond",
+"cat": "Incident Mitigation",
+"legacy": null,
+"tas": [
+"TA8",
+"TA4"
+],
+"controls": [
+[
+"TA8",
+3
+],
+[
+"TA4",
+1
+],
+[
+"TA2",
+3
+]
+],
+"ev": "Immediate session invalidation on context shift; short-lived credentials bound the blast radius"
+},
+"RC.RP-01": {
+"t": "The recovery portion of the incident response plan is executed once initiated.",
+"fn": "Recover",
+"cat": "Incident Recovery Plan Execution",
+"legacy": null,
+"tas": [
+"TA7",
+"TA4"
+],
+"controls": [
+[
+"S",
+"Key rotation and re-issuance under bank-held KEKs and private PKI (Appendix B A.3, TA.4)"
+]
+],
+"ev": "Appendix B A.3; TA.4 remediation 2"
+}
+};
+const CRI_FN = ["Govern","Identify","Protect","Detect","Respond","Recover"];
+// ---------------------------------------------------------------- threat-model architectures per use case
+// zones: left-to-right columns. nodes: {id,l (label lines),z (zone index)}. edges: {f,t,l (flow label),tas}. taps: edges the harvesting adversary copies.
+const MODELS = {
+ "UC1":{zones:["Customers & partners","Edge (provider)","Bank web tier","Identity & keys"],
+   nodes:[{id:"browser",l:["Customer browser","/ mobile app"],z:0},{id:"peer",l:["Partner VPN /","IPsec peer"],z:0},{id:"admin",l:["Administrator","workstation"],z:0},
+          {id:"cdn",l:["CDN / WAF /","load balancer"],z:1},{id:"gw",l:["API gateway"],z:1},
+          {id:"web",l:["Public website /","web application"],z:2},{id:"bastion",l:["SSH bastion"],z:2},
+          {id:"idp",l:["IdP / CIAM","(tokens)"],z:3},{id:"kms",l:["KMS / HSM"],z:3}],
+   edges:[{f:"browser",t:"cdn",l:"TLS 1.3 + session cookie",tas:["TA1","TA8"]},{f:"peer",t:"gw",l:"IPsec / VPN",tas:["TA1"]},{f:"admin",t:"bastion",l:"SSH",tas:["TA1"]},
+          {f:"cdn",t:"web",l:"TLS",tas:["TA1"]},{f:"gw",t:"web",l:"API calls, tokens",tas:["TA6","TA5"]},
+          {f:"web",t:"idp",l:"OIDC / SAML tokens",tas:["TA5","TA8"]},{f:"kms",t:"web",l:"key transport",tas:["TA1"]}],
+   taps:["browser>cdn","peer>gw","admin>bastion"],
+   note:"External harvest at the edge: every flow the adversary taps is ephemeral for the bank and permanent for the adversary."},
+ "UC2":{zones:["Schemes & vendors","Merchant","Acquirer edge","Acquirer core"],
+   nodes:[{id:"emv",l:["EMVCo / schemes /","PCI SSC"],z:0},{id:"vendor",l:["Terminal vendor","(firmware)"],z:0},
+          {id:"card",l:["EMV card","(chip / contactless)"],z:1},{id:"pos",l:["PoS terminal","(PIN entry)"],z:1},
+          {id:"pgw",l:["Payment gateway"],z:2},
+          {id:"host",l:["Acquirer host"],z:3},{id:"hsm",l:["HSM / key-injection","facility"],z:3}],
+   edges:[{f:"card",t:"pos",l:"EMV offline auth",tas:["TA9"]},{f:"pos",t:"pgw",l:"TLS/IPsec, PIN block",tas:["TA1","TA9"]},{f:"pgw",t:"host",l:"authorisation",tas:["TA1"]},
+          {f:"hsm",t:"pos",l:"remote key injection (TR-34 / RSA)",tas:["TA4","TA9"]},{f:"vendor",t:"pos",l:"signed firmware",tas:["TA4","TA9"]},{f:"emv",t:"card",l:"CA keys, specs",tas:["TA9"]}],
+   taps:["pos>pgw"],
+   note:"The bank controls the gateway and HSM; the card, terminal firmware and scheme keys are set by others — the long-dependency case."},
+ "UC3":{zones:["Bank sites & users","Provider edge","Provider platform","Provider key & identity"],
+   nodes:[{id:"dc",l:["Bank data centre"],z:0},{id:"user",l:["Workforce user"],z:0},{id:"ekm",l:["Bank external","key manager"],z:0},
+          {id:"edge",l:["Provider edge TLS /","load balancer"],z:1},{id:"saas",l:["SaaS endpoints","(CRM, HR, collab)"],z:1},
+          {id:"mesh",l:["Managed mesh /","bank workloads"],z:2},{id:"micro",l:["Microservices","(east-west)"],z:2},{id:"store",l:["Storage & DB","(envelope encrypted)"],z:2},{id:"tenant",l:["Other tenants"],z:2},
+          {id:"fed",l:["Identity federation","SaaS"],z:3},{id:"kms",l:["Managed KMS / HSM"],z:3}],
+   edges:[{f:"dc",t:"edge",l:"site-to-cloud IPsec",tas:["TA1"]},{f:"user",t:"saas",l:"TLS, SSO login",tas:["TA1","TA3"]},{f:"edge",t:"mesh",l:"TLS",tas:["TA1"]},
+          {f:"mesh",t:"micro",l:"mTLS east-west",tas:["TA2"]},{f:"micro",t:"store",l:"data, envelope keys",tas:["TA7"]},{f:"tenant",t:"store",l:"co-residence",tas:["TA7"]},
+          {f:"kms",t:"store",l:"KEK / data keys",tas:["TA7","TA4"]},{f:"ekm",t:"kms",l:"BYOK import (RSA-wrapped)",tas:["TA4"]},{f:"fed",t:"mesh",l:"workload identity",tas:["TA3","TA4"]}],
+   taps:["dc>edge","user>saas"],
+   note:"Provider-controlled cryptography: the bank remediates through what the provider offers; bank-held KEKs keep exit independent of provider timelines."},
+};
+
+const TYPES = [
+ {k:"ta",label:"Threat areas",src:TAS,id:i=>"TA."+i.slice(2)},
+ {k:"uc",label:"Use cases",src:USECASES,id:i=>"Use case "+i.slice(2)},
+ {k:"asset",label:"Assets",src:ASSETS,id:i=>"Asset."+i.slice(1)},
+ {k:"vuln",label:"Vulnerabilities",src:VULNS,id:i=>"V_PQC_"+i.slice(1)},
+ {k:"vd",label:"Vendor dependencies",src:VDS,id:i=>"VD."+i.slice(2)},
+ {k:"key",label:"Key types",src:KEYS,id:i=>"Key "+i.slice(1)},
+ {k:"ms",label:"Milestones",src:MILESTONES,id:i=>i},
+ {k:"cri",label:"CRI Profile (CSF 2.0)",src:CRI,id:i=>i},
+];
+const typeOf = id => TYPES.find(t=>t.src[id]);
+const label = id => typeOf(id).id(id);
+const title = id => typeOf(id).src[id].t;
+const tasWith = (field,id) => Object.keys(TAS).filter(k=>(TAS[k][field]||[]).includes(id));
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $ = s => document.querySelector(s);
+const bandPill = b => `<span class="band ${b.replace(/\s/g,"")}">${esc(b)}</span>`;
+const chip = id => `<button class="chip" data-go="${id}">${label(id)} · ${esc(title(id))}</button>`;
+const section = (h, inner) => inner ? `<h3 class="sec">${h}</h3>${inner}` : "";
+
+// ---------------------------------------------------------------- browse grid
+let cur = "ta", query = "";
+function renderNav(){
+  $("#nav").innerHTML = `<h2>Browse by type</h2>` + TYPES.map(t=>`<button data-type="${t.k}" aria-current="${t.k===cur}">${t.label}<span class="n">${Object.keys(t.src).length}</span></button>`).join("")
+    + `<h2>Specialist views</h2><button data-view="CRI" aria-current="${cur==="CRI"}">CRI Profile matrix<span class="n">risk and controls</span></button><button data-view="HEAT" aria-current="${cur==="HEAT"}">Risk heatmap<span class="n">inherent and residual</span></button>`;
+  $("#nav").querySelectorAll("button[data-type]").forEach(b=>b.onclick=()=>{cur=b.dataset.type;renderNav();renderGrid();});
+  $("#nav").querySelectorAll("button[data-view]").forEach(b=>b.onclick=()=>{ go(b.dataset.view); });
+}
+function matches(id){ if(!query) return true; const o=typeOf(id).src[id]; return (label(id)+" "+JSON.stringify(o)).toLowerCase().includes(query); }
+function card(id){
+  const t = typeOf(id), o = t.src[id]; let sub="", pill="";
+  if(t.k==="ta"){ pill=bandPill(o.band)+` <span class="band">TRCL ${o.trcl}</span>`; sub=o.sub; }
+  else if(t.k==="asset"){ pill=bandPill(o.crit); sub=o.r; }
+  else if(t.k==="vd"){ pill=bandPill(o.tier)+` <span class="band">${esc(o.lvl)}</span>`; sub="Used by "+tasWith("vds",id).map(label).join(", "); }
+  else if(t.k==="vuln"){ sub="Cited in "+(tasWith("vulns",id).map(label).join(", ")||"—"); }
+  else if(t.k==="key"){ sub="Cryptoperiod: "+o.p; }
+  else if(t.k==="ms"){ sub=o.wave; }
+  else if(t.k==="uc"){ sub=o.tas.map(label).join(", "); pill=`<span class="band">Threat model</span>`; }
+  else if(t.k==="cri"){
+    sub=o.cat+(o.legacy?` · was ${o.legacy}`:"");
+    const rems=remediationsForCri(id); const vds=vdsForCri(id); const tr=trackOf(id);
+    const rd=rems.filter(it=>tr.rem[remKey(it.ta,it.n)]).length;
+    const vm=vds.filter(v=>tr.vdLevel[v]).length;
+    const rp=rems.length?Math.round(100*rd/rems.length):0; const vp=vds.length?Math.round(100*vm/vds.length):0;
+    pill=`<span class="band">${esc(o.fn)}</span> <span class="band">${rp}% rem</span> <span class="band">${vp}% PQCMM</span>`;
+  }
+  return `<button class="node" data-go="${id}"><span class="id">${label(id)}</span><span class="t">${esc(o.t)}</span><span class="s">${esc(sub)}</span><span class="chips">${pill}</span></button>`;
+}
+function renderGrid(){
+  const t = TYPES.find(x=>x.k===cur);
+  let ids = query ? TYPES.flatMap(x=>Object.keys(x.src)) : Object.keys(t.src);
+  ids = ids.filter(matches);
+  $("#main").innerHTML = `<div class="legend" id="legend"></div><div class="grid" id="grid"></div>`;
+  $("#legend").innerHTML = query ? `Showing ${ids.length} matches across all types` :
+    `<span><i class="sw" style="background:var(--high)"></i>High band / tier</span><span><i class="sw" style="background:var(--med)"></i>Medium / Moderate</span><span><i class="sw" style="background:var(--low)"></i>Low</span><span>TRCL = Threat Remediation Complexity Level (0–8, within band)</span>`;
+  $("#grid").innerHTML = ids.length ? ids.map(card).join("") : `<div class="empty">Nothing matches “${esc(query)}”.</div>`;
+}
+
+// ---------------------------------------------------------------- entity pane
+function detail(id){
+  const t = typeOf(id), o = t.src[id]; let body = "";
+  if(t.k==="ta"){
+    body += `<p>${esc(o.sub)}</p><dl class="kv">
+      <dt>Quantum Risk band</dt><dd>${bandPill(o.band)}</dd><dt>TRCL</dt><dd>${o.trcl} — ${esc(o.driver)}</dd>
+      <dt>Probability / Impact</dt><dd>${o.prob} / ${o.imp}</dd><dt>Sector milestones</dt><dd>${esc(o.sm)}</dd><dt>Wave</dt><dd>${esc(o.wave)}</dd>
+      <dt>Framework alignment</dt><dd>${esc(o.reg)}</dd></dl>`;
+    body += section("Granular risk diagnosis", `<p>${esc(o.diag)}</p>`);
+    body += section("Remediation steps", `<ol class="rem">${o.rem.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`);
+    const trp = taRemProgress(id);
+    body += section("Threat-area remediation mapping", `<p class="hint">Share of this threat area’s remediations checked across linked CRI outcomes (${trp.cris||0} CRI items × ${trp.remN||0} remediations).</p><div class="track-summary">${countPctBar(trp.done,trp.total,"TA remediations mapped")}<span class="pill">${trp.done} of ${trp.total} checks</span></div>`);
+    body += section("Related vulnerabilities", `<div class="chips">${o.vulns.map(chip).join("")}</div>`);
+    body += section("Affected assets", `<div class="chips">${o.assets.map(chip).join("")}</div>`);
+    body += section("Typical key types", `<div class="chips">${o.keys.map(chip).join("")}</div>`);
+    body += section("Vendor dependencies by PKIC tier", `<div class="chips">${o.vds.map(chip).join("")}</div>`);
+    const ucs = Object.keys(USECASES).filter(u=>USECASES[u].tas.includes(id));
+    body += section("Use cases and threat models", ucs.length?`<div class="chips">${ucs.map(chip).join("")}</div>`:"");
+    body += section("Programme and sector milestones", `<div class="chips">${["PM1","PM2","PM3","SM1","SM2","SM3"].map(chip).join("")}</div>`);
+    const crs = Object.keys(CRI).filter(c=>CRI[c].tas.includes(id)); const tt = tally(crs.map(c=>[c,id]));
+    body += section("CRI Profile adherence", `<p>${pctBar(tt,false)} <span class="hint">${tt.adherent} of ${tt.total} outcomes implemented or evidenced for this threat area</span></p><div class="adhlist">${crs.map(c=>{ const a=adhOf(c,id)||{}; const st=a.status||"not-started"; return `<button class="adhrow st-${st}" data-cell="${c}|${id}"><span class="g">${STATUS[st].g}</span><span class="t">${c} · ${esc(CRI[c].t)}</span><span class="m">${STATUS[st].l}${a.owner?" · "+esc(a.owner):""}</span></button>`; }).join("")}</div>`);
+  } else if(t.k==="asset"){
+    body += `<p>Criticality ${bandPill(o.crit)}</p><p>${esc(o.r)}</p>`;
+    body += section("Related threat areas", `<div class="chips">${tasWith("assets",id).map(chip).join("")}</div>`);
+    body += section("Vendor dependencies that touch this asset", `<div class="chips">${Object.keys(VDS).filter(v=>VDS[v].assets.includes(id)).map(chip).join("")}</div>`);
+  } else if(t.k==="vuln"){
+    body += `<p>${esc(o.c)}</p>`;
+    body += section("Threat areas that cite this vulnerability", `<div class="chips">${tasWith("vulns",id).map(chip).join("")||"<p>Applies through the supplier ledger.</p>"}</div>`);
+  } else if(t.k==="vd"){
+    body += `<dl class="kv"><dt>Default PKIC tier</dt><dd>${bandPill(o.tier)}</dd><dt>Required PQCMM (SM1 → SM2 → SM3)</dt><dd>${esc(o.lvl)}</dd><dt>Reassessment</dt><dd>${esc(o.cad)}</dd></dl>`;
+    const vmp = vdMapProgress(id);
+    body += section("Vendor dependency PQCMM mapping", `<p class="hint">Share of linked CRI outcomes where a current PQCMM level is set for this vendor dependency.</p><div class="track-summary">${countPctBar(vmp.done,vmp.total,"CRI items with PQCMM mapped")}<span class="pill">${vmp.done} of ${vmp.total} CRI mappings</span></div>`);
+    body += section("Threat areas that depend on this vendor", `<div class="chips">${tasWith("vds",id).map(chip).join("")}</div>`);
+    body += section("Linked assets", `<div class="chips">${o.assets.map(chip).join("")}</div>`);
+    body += section("How this dependency affects risk", `<p>If this supplier is below its required level on a High-band threat area, that area’s TRCL rises by one within the band and an exception is opened, expiring no later than SM2. Where the dependency is long (hardware refresh, scheme or standards bodies, counterparties) remediation starts in the current programme cycle even in the Medium band.</p>`);
+  } else if(t.k==="key"){
+    body += `<p>Recommended cryptoperiod: ${esc(o.p)}</p>`;
+    body += section("Threat areas that use this key type", `<div class="chips">${tasWith("keys",id).map(chip).join("")}</div>`);
+  } else if(t.k==="ms"){
+    body += `<p>${esc(o.d)}</p><dl class="kv"><dt>Wave</dt><dd>${esc(o.wave)}</dd><dt>Sector link</dt><dd>${esc(o.sm)}</dd></dl>`;
+    body += section("Related milestones", `<div class="chips">${Object.keys(MILESTONES).filter(m=>m!==id).map(chip).join("")}</div>`);
+  } else if(t.k==="cri"){
+    const rems = remediationsForCri(id);
+    const vds = vdsForCri(id);
+    const tr = trackOf(id);
+    const remDone = rems.filter(it=>tr.rem[remKey(it.ta,it.n)]).length;
+    const vdMapped = vds.filter(v=>tr.vdLevel[v]).length;
+    body += `<dl class="kv"><dt>Function · Category</dt><dd>${esc(o.fn)} · ${esc(o.cat)}</dd>${o.legacy?`<dt>Register v0.5 identifier</dt><dd>${esc(o.legacy)} (CSF 1.1 naming)</dd>`:""}<dt>Diagnostic statements</dt><dd>To be completed from the CRI Profile v2.0 workbook at the institution’s Impact Tier</dd><dt>Threat areas</dt><dd>${o.tas.map(label).join(", ")}</dd><dt>Vendor dependencies</dt><dd>${vds.map(label).join(", ")||"None via linked threat areas"}</dd><dt>Threat-area remediation mapping</dt><dd><span style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">${countPctBar(remDone,rems.length,"remediations",true)}<span>${remDone} of ${rems.length}</span></span></dd><dt>Vendor dependency PQCMM mapping</dt><dd><span style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">${countPctBar(vdMapped,vds.length,"VD mapped",true)}<span>${vdMapped} of ${vds.length}</span></span></dd></dl>`;
+    body += section("Controls in the register", `<ol class="rem">${o.controls.map(c=>`<li>${criControl(c)}</li>`).join("")}</ol>`);
+    body += section("Evidence expected", `<p>${esc(o.ev)}</p>`);
+    body += section("Persistence", persistControlsHtml());
+    body += section("Threat-area remediation checklist", `<p class="hint">Check off each linked threat area’s resolutions and remediations as they are completed for this CRI outcome. Progress is saved in this browser.</p>${remChecklistHtml(id)}`);
+    body += section("Vendor dependency PQCMM map", `<p class="hint">Map every linked vendor dependency to its current PQCMM level against the required path in the register.</p>${vdPqmmMapHtml(id)}`);
+    const rt = tally(o.tas.map(t=>[id,t]));
+    body += section("Adherence by threat area", `<p>${pctBar(rt,false)}</p><div class="adhlist">${o.tas.map(t=>{ const a=adhOf(id,t)||{}; const st=a.status||"not-started"; return `<button class="adhrow st-${st}" data-cell="${id}|${t}"><span class="g">${STATUS[st].g}</span><span class="t">${label(t)} · ${esc(TAS[t].t)}</span><span class="m">${STATUS[st].l}${a.owner?" · "+esc(a.owner):""}</span></button>`; }).join("")}</div>`);
+    body += section("Open related views", `<div class="chips"><button class="chip" data-view="CRI">Open the CRI Profile matrix →</button></div>`);
+  }
+  $("#pane").dataset.id = id;
+  $("#pane").innerHTML = `<div class="top"><div><div class="idl">${label(id)}</div><h2>${esc(o.t)}</h2></div><button id="close" class="btn" aria-label="Close">Close</button></div>${body}`;
+  $("#pane").classList.add("open");
+  $("#close").onclick = closePane;
+  $("#pane").querySelectorAll("[data-cell]").forEach(b=>b.onclick=()=>{ const [c,t]=b.dataset.cell.split("|"); openEditor(c,t); });
+  bindCriTrackHandlers($("#pane"));
+  bindPersistControls($("#pane"));
+}
+function closePane(){ $("#pane").classList.remove("open"); $("#pane").dataset.id=""; if(cur==="cri" && !query) renderGrid(); }
+
+// ---------------------------------------------------------------- use-case threat model view
+const NW=172, NH=66, COLW=292, ROWH=108, PAD=16, LANE=26;
+function layout(m){
+  const pos={}; const counts=[];
+  const lanes = m.edges.filter(e=>Math.abs(zoneOf(m,e.f)-zoneOf(m,e.t))>=2).length;
+  const HEAD = 36 + lanes*LANE;
+  m.nodes.forEach(n=>{ const i=(counts[n.z]=(counts[n.z]||0)+1)-1; pos[n.id]={x:PAD+n.z*COLW+(COLW-NW)/2, y:HEAD+PAD+i*ROWH, w:NW, h:NH}; });
+  const rows=Math.max(...counts);
+  const advY=HEAD+PAD+rows*ROWH;
+  return {pos, W:PAD*2+m.zones.length*COLW, H:advY+NH+PAD, advY, HEAD};
+}
+const zoneOf=(m,id)=>m.nodes.find(n=>n.id===id).z;
+function lbl(x,y,text,anchor="middle"){ const w=text.length*6.1+8; const bx = anchor==="middle"? x-w/2 : x; return `<rect x="${bx}" y="${y-10}" width="${w}" height="14" rx="3" style="fill:var(--surface);opacity:.92"/><text x="${x}" y="${y}" text-anchor="${anchor}">${esc(text)}</text>`; }
+function svgModel(uc, sel){
+  const m=MODELS[uc], L=layout(m);
+  let s=`<svg viewBox="0 0 ${L.W} ${L.H}" role="img" aria-label="Architecture of ${esc(USECASES[uc].t)} with threat areas marked on each flow"><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>`;
+  m.zones.forEach((z,i)=>{ s+=`<rect class="tm-zone" x="${PAD+i*COLW+4}" y="8" width="${COLW-8}" height="${L.H-16}" rx="8"/><text class="tm-zone-l" x="${PAD+i*COLW+COLW/2}" y="26" text-anchor="middle">${esc(z)}</text>`; });
+  let lane=0, labels="", mid={};
+  m.edges.forEach(e=>{
+    const a=L.pos[e.f], b=L.pos[e.t]; const id=`${e.f}>${e.t}`; const cls="tm-edge"+(sel===id?" sel":"");
+    const za=zoneOf(m,e.f), zb=zoneOf(m,e.t);
+    if(e.f===e.t){ // self loop: bar under the node
+      const x1=a.x+24, x2=a.x+a.w-24, y=a.y+a.h;
+      s+=`<g class="${cls}" data-edge="${id}"><path d="M${x1} ${y} v12 h${x2-x1} v-12" fill="none" stroke="currentColor" stroke-width="1.3" marker-end="url(#arr)"/><line class="hit" x1="${x1}" y1="${y+12}" x2="${x2}" y2="${y+12}"/>`;
+      labels+=`<g data-edge="${id}">`+lbl((x1+x2)/2, y+26, e.l)+badges(e.tas,(x1+x2)/2,y+31)+`</g>`; mid[id]={x:(x1+x2)/2,y:y+12}; s+=`</g>`; return;
+    }
+    if(Math.abs(za-zb)>=2){ // long flow: route along a lane at the top
+      const ly=36+lane*LANE+8; lane++;
+      const x1=a.x+a.w/2, x2=b.x+b.w/2;
+      s+=`<g class="${cls}" data-edge="${id}"><path d="M${x1} ${a.y} V${ly} H${x2} V${b.y}" fill="none" stroke="currentColor" stroke-width="1.3" marker-end="url(#arr)"/><line class="hit" x1="${x1}" y1="${ly}" x2="${x2}" y2="${ly}"/>`;
+      const mx=(x1+x2)/2; labels+=`<g data-edge="${id}">`+lbl(mx, ly-6, e.l)+badges(e.tas, mx+e.l.length*3.1+8+(e.tas.length*38)/2+6, ly-13)+`</g>`; mid[id]={x:mx,y:ly}; s+=`</g>`; return;
+    }
+    let x1,y1,x2,y2;
+    if(za<zb){ x1=a.x+a.w; y1=a.y+a.h/2; x2=b.x; y2=b.y+b.h/2; }
+    else if(za>zb){ x1=a.x; y1=a.y+a.h/2+12; x2=b.x+b.w; y2=b.y+b.h/2+12; }
+    else { x1=a.x+a.w/2; y1=a.y+a.h; x2=b.x+b.w/2; y2=b.y; if(a.y>b.y){y1=a.y;y2=b.y+b.h;} }
+    const mx=(x1+x2)/2, my=(y1+y2)/2;
+    s+=`<g class="${cls}" data-edge="${id}"><line class="hit" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" marker-end="url(#arr)"/>`;
+    labels+=`<g data-edge="${id}">`+lbl(mx, my-8, e.l)+badges(e.tas,mx,my+4)+`</g>`; mid[id]={x:mx,y:my}; s+=`</g>`;
+  });
+  m.nodes.forEach(n=>{ const p=L.pos[n.id]; const cls="tm-node"+(sel===n.id?" sel":"");
+    s+=`<g class="${cls}" data-node="${n.id}"><rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="6"/>`;
+    n.l.forEach((ln,i)=>{ s+=`<text x="${p.x+p.w/2}" y="${p.y+(n.l.length===1?26:18+i*15)}" text-anchor="middle">${esc(ln)}</text>`; });
+    s+=badges(nodeTAs(uc,n.id),p.x+p.w/2,p.y+p.h-19)+`</g>`; });
+  s+=`<g class="tm-edge">${labels}</g>`;
+  const advZone = zoneOf(m, m.taps[0].split(">")[0]);
+  const ax=PAD+(advZone+1)*COLW-NW/2, ay=L.advY;
+  s+=`<g class="tm-adv"><rect x="${ax}" y="${ay}" width="${NW}" height="${NH-14}" rx="6"/><text x="${ax+NW/2}" y="${ay+21}" text-anchor="middle">Harvesting adversary</text><text x="${ax+NW/2}" y="${ay+38}" text-anchor="middle">copies now, keeps indefinitely</text></g>`;
+  m.taps.forEach(id=>{ const {x:mx,y:my}=mid[id];
+    s+=`<path class="tm-tap" d="M${ax+NW/2} ${ay} C ${ax+NW/2} ${my+40}, ${mx} ${my+40}, ${mx} ${my+22}"/><circle cx="${mx}" cy="${my}" r="3" fill="var(--adv)"/>`; });
+  const lx = ax+NW+10, la = "start";
+  s+=`<text class="tm-tap-l" x="${lx}" y="${ay+30}" text-anchor="${la}">external copy — shelf-life set by the adversary (1.2)</text>`;
+  return s+`</svg>`;
+}
+function badges(tas,cx,y,small){ if(!tas.length) return ""; const w=34,g=4; let x=cx-(tas.length*w+(tas.length-1)*g)/2; let s="";
+  tas.forEach(t=>{ s+=`<g class="tm-badge ${TAS[t].band}" data-ta="${t}"><rect x="${x}" y="${y}" width="${w}" height="14"/><text x="${x+w/2}" y="${y+10.5}" text-anchor="middle">${label(t)}</text></g>`; x+=w+g; }); return s; }
+function nodeTAs(uc,n){ const m=MODELS[uc]; const set=new Set(); m.edges.forEach(e=>{ if(e.f===n||e.t===n) e.tas.forEach(t=>set.add(t)); }); return [...set].filter(t=>USECASES[uc].tas.includes(t)||true); }
+function elementTAs(uc, sel){
+  const m=MODELS[uc]; if(!sel) return USECASES[uc].tas;
+  if(sel.includes(">")) return m.edges.find(e=>`${e.f}>${e.t}`===sel).tas;
+  return nodeTAs(uc, sel);
+}
+function elementName(uc, sel){ const m=MODELS[uc]; if(!sel) return "the whole use case";
+  if(sel.includes(">")){ const e=m.edges.find(e=>`${e.f}>${e.t}`===sel); const n=id=>m.nodes.find(x=>x.id===id).l.join(" "); return `flow “${e.l}” (${n(e.f)} → ${n(e.t)})`; }
+  return m.nodes.find(x=>x.id===sel).l.join(" "); }
+function taCard(t, uc){
+  const o=TAS[t]; return `<div class="ta-card"><div class="hd"><span class="idl">${label(t)}</span><b>${esc(o.t)}</b>${bandPill(o.band)}<span class="band">TRCL ${o.trcl}</span></div>
+    <p class="why">${esc(o.diag)}</p><ol class="rem">${o.rem.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
+    <div class="chips" style="margin-top:8px">${o.vds.filter(v=>USECASES[uc].vds.includes(v)).map(chip).join("")}<button class="chip" data-go="${t}">Open ${label(t)} →</button></div></div>`;
+}
+let ucSel = null;
+function renderUseCase(uc){
+  const o=USECASES[uc], m=MODELS[uc];
+  const tas=elementTAs(uc, ucSel);
+  $("#main").innerHTML = `<div class="ucv">
+    <div class="top"><div><div class="idl">${label(uc)} threat model</div><h2>${esc(o.t)}</h2></div><button class="btn" id="back">← All use cases</button></div>
+    <p>${esc(o.d)}</p>
+    <figure><div id="svgwrap">${svgModel(uc, ucSel)}</div><figcaption>${esc(m.note)} Badges on each flow and component are the threat areas that apply; click a component or flow to filter the list below, click a badge to open the threat area.</figcaption></figure>
+    <h3 class="sec">Threats and remediation for ${esc(elementName(uc, ucSel))} ${ucSel?`<button class="btn" id="clearsel" style="margin-left:8px">Show all</button>`:""}</h3>
+    <div class="ta-list">${tas.map(t=>taCard(t,uc)).join("")}</div>
+    <div class="uc-cols">
+      <div>${section("Vendor ledger for this use case", `<div class="chips">${o.vds.map(chip).join("")}</div>`)}</div>
+      <div>${section("Programme and sector milestones", `<div class="chips">${["PM1","PM2","PM3","SM1","SM2","SM3"].map(chip).join("")}</div>`)}</div>
+    </div></div>`;
+  $("#back").onclick = ()=>{ ucSel=null; cur="uc"; location.hash=""; renderNav(); renderGrid(); };
+  const cs=$("#clearsel"); if(cs) cs.onclick=()=>{ ucSel=null; renderUseCase(uc); };
+  $("#svgwrap").addEventListener("click", e=>{
+    const bd=e.target.closest("[data-ta]"); if(bd){ go(bd.dataset.ta); return; }
+    const nd=e.target.closest("[data-node]"); const ed=e.target.closest("[data-edge]");
+    const id = nd ? nd.dataset.node : ed ? ed.dataset.edge : null;
+    if(id){ ucSel = (ucSel===id? null : id); renderUseCase(uc); }
+  });
+}
+
+
+// ---------------------------------------------------------------- adherence tracking (localStorage + optional Claude db)
+const STATUS = {
+  "not-started":{l:"Not started",g:"–"},
+  "in-progress":{l:"In progress",g:"◔"},
+  "implemented":{l:"Implemented",g:"●"},
+  "evidenced":{l:"Evidenced",g:"✔"},
+  "exception":{l:"Exception",g:"!"},
+};
+const ADH_LS_KEY = "pqc-register-adherence-v1";
+let ADH = {}, dbRef = null, canWrite = true, adhState = "loading", adhNote = "", persistMode = "local";
+const adhKey = (cri, ta) => `${cri}__${ta}`;
+function adhOf(cri, ta){ return ADH[adhKey(cri,ta)] || null; }
+function vdsForTa(ta){ return (TAS[ta] && TAS[ta].vds) ? TAS[ta].vds.slice() : []; }
+function vdsForCri(cri){ const set=new Set(); (CRI[cri].tas||[]).forEach(ta=>vdsForTa(ta).forEach(v=>set.add(v))); return [...set]; }
+const CRI_TRACK_KEY = "pqc-cri-track-v1";
+let CRI_TRACK = {};
+function loadCriTrack(){
+  try { const raw=localStorage.getItem(CRI_TRACK_KEY); CRI_TRACK = raw?JSON.parse(raw):{}; if(!CRI_TRACK||typeof CRI_TRACK!=="object") CRI_TRACK={}; }
+  catch(e){ CRI_TRACK={}; }
+  criTrackReady = true;
+}
+function saveCriTrack(){ try{ localStorage.setItem(CRI_TRACK_KEY, JSON.stringify(CRI_TRACK)); afterLocalSave(); return true; }catch(e){ return false; } }
+const BACKUP_FLAG = "pqc-register-backup-at";
+function persistBundle(){
+  ensureCriTrack();
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    adherence: ADH,
+    criTrack: CRI_TRACK
+  };
+}
+function applyPersistBundle(data){
+  if(!data || typeof data!=="object") throw new Error("Invalid backup file");
+  if(data.adherence && typeof data.adherence==="object"){ ADH = data.adherence; saveLocalAdh(); }
+  if(data.criTrack && typeof data.criTrack==="object"){ CRI_TRACK = data.criTrack; criTrackReady = true; saveCriTrack(); }
+  adhNote = "Loaded persistence file from "+(data.exportedAt?data.exportedAt.slice(0,19):"backup")+".";
+  adhState = "local";
+  refresh();
+  if(cur==="cri" && !query) renderGrid();
+  const open=$("#pane").dataset.id; if(open && typeOf(open)) detail(open);
+}
+function downloadPersistBundle(reason){
+  const blob = new Blob([JSON.stringify(persistBundle(),null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().replace(/[:.]/g,"-");
+  a.href = URL.createObjectURL(blob);
+  a.download = `pqc-register-backup-${stamp}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  try{ localStorage.setItem(BACKUP_FLAG, new Date().toISOString()); }catch(e){}
+  return true;
+}
+function exportPersistBundle(){ downloadPersistBundle("manual"); adhNote="Downloaded JSON backup."; refresh(); }
+function importPersistFile(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try { applyPersistBundle(JSON.parse(String(reader.result||"{}"))); adhNote="Imported JSON backup into this browser."; refresh(); }
+    catch(e){ adhNote="Could not import that JSON ("+(e&&e.message||"error")+")."; refresh(); }
+  };
+  reader.readAsText(file);
+}
+function maybeAutoBackup(){
+  try{
+    const last = localStorage.getItem(BACKUP_FLAG);
+    const age = last ? (Date.now()-Date.parse(last)) : Infinity;
+    // Auto-download a backup at most once per 12 hours when there is something to keep
+    const has = Object.keys(ADH||{}).length + Object.keys(CRI_TRACK||{}).length;
+    if(has && age > 12*60*60*1000) downloadPersistBundle("auto");
+  }catch(e){}
+}
+function persistControlsHtml(){
+  return `<div class="persist-bar">
+    <button class="btn primary" type="button" id="persist-export">Download JSON backup</button>
+    <label class="btn" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">Import JSON<input id="persist-import" type="file" accept="application/json,.json" hidden></label>
+    <span class="hint">Backups keep adherence, TA remediation checks, and VD PQCMM mappings. An automatic download also runs about every 12 hours when you have saved data.</span>
+  </div>`;
+}
+function bindPersistControls(root){
+  const ex = root.querySelector("#persist-export"); if(ex) ex.onclick = () => exportPersistBundle();
+  const im = root.querySelector("#persist-import"); if(im) im.onchange = () => { if(im.files&&im.files[0]) importPersistFile(im.files[0]); im.value=""; };
+}
+function afterLocalSave(){ maybeAutoBackup(); }
+
+let criTrackReady = false;
+function ensureCriTrack(){ if(!criTrackReady){ loadCriTrack(); criTrackReady = true; } }
+function trackOf(cri){ ensureCriTrack(); if(!CRI_TRACK[cri]) CRI_TRACK[cri]={rem:{}, vdLevel:{}}; if(!CRI_TRACK[cri].rem) CRI_TRACK[cri].rem={}; if(!CRI_TRACK[cri].vdLevel) CRI_TRACK[cri].vdLevel={}; return CRI_TRACK[cri]; }
+function remKey(ta,n){ return ta+":"+n; }
+function remediationsForCri(cri){
+  const o=CRI[cri]; const out=[]; const seen=new Set();
+  (o.controls||[]).forEach(([a,b])=>{
+    if(a==="S") return;
+    const n=+b; if(!TAS[a]||!TAS[a].rem||!TAS[a].rem[n-1]) return;
+    const k=remKey(a,n); if(seen.has(k)) return; seen.add(k);
+    out.push({ta:a,n,text:TAS[a].rem[n-1], via:"control"});
+  });
+  (o.tas||[]).forEach(ta=>{
+    (TAS[ta].rem||[]).forEach((txt,i)=>{
+      const n=i+1; const k=remKey(ta,n); if(seen.has(k)) return; seen.add(k);
+      out.push({ta,n,text:txt, via:"threat-area"});
+    });
+  });
+  return out;
+}
+function pqmmOptions(lvl){
+  const found=[...String(lvl||"").matchAll(/L([0-5])/g)].map(m=>"L"+m[1]);
+  return [...new Set(["L0","L1","L2","L3","L4","L5", ...found])];
+}
+function remChecklistHtml(cri){
+  const tr=trackOf(cri); const items=remediationsForCri(cri);
+  if(!items.length) return `<p class="hint">No remediations are linked through this CRI outcome’s threat areas.</p>`;
+  const done=items.filter(it=>tr.rem[remKey(it.ta,it.n)]).length;
+  // Per threat-area mini trackers
+  const byTa={};
+  items.forEach(it=>{ if(!byTa[it.ta]) byTa[it.ta]={done:0,total:0}; byTa[it.ta].total++; if(tr.rem[remKey(it.ta,it.n)]) byTa[it.ta].done++; });
+  const taBars = Object.keys(byTa).map(ta=>{
+    const x=byTa[ta];
+    return `<div class="ev-block" style="padding:8px 10px"><div class="ev-meta">${label(ta)} · ${esc(TAS[ta].t)}</div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px">${countPctBar(x.done,x.total,"remediations checked")}<span class="hint">${x.done} of ${x.total} remediations</span></div></div>`;
+  }).join("");
+  const list=items.map(it=>{
+    const k=remKey(it.ta,it.n); const on=!!tr.rem[k];
+    return `<li class="${on?"done":""}"><input type="checkbox" data-rem-check="${cri}|${it.ta}|${it.n}" ${on?"checked":""} aria-label="Mark ${label(it.ta)} remediation ${it.n} done"><div><div class="meta">${label(it.ta)} remediation ${it.n}${it.via==="control"?" · cited by this CRI control":""}</div><div class="txt">${esc(it.text)}</div></div></li>`;
+  }).join("");
+  return `<div class="track-summary">${countPctBar(done,items.length,"remediations checked")}<span class="pill">${done} of ${items.length} remediations checked</span></div><div style="margin:8px 0 12px">${taBars}</div><ul class="rem-check">${list}</ul>`;
+}
+function vdPqmmMapHtml(cri){
+  const tr=trackOf(cri); const vds=vdsForCri(cri);
+  if(!vds.length) return `<p class="hint">No vendor dependencies are linked through this CRI outcome’s threat areas.</p>`;
+  const mapped=vds.filter(v=>tr.vdLevel[v]).length;
+  const rows=vds.map(v=>{
+    const o=VDS[v]; const cur=tr.vdLevel[v]||"";
+    const path=pqmmPathProgress(v, cur);
+    const pathBar = path?`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px"><span class="pct sm" title="${esc(path.label)}"><i style="width:${path.pct}%"></i><b>${path.pct}%</b></span><span class="hint">${esc(path.label)}</span></div>`:"";
+    const opts=`<option value="">Select current PQCMM…</option>`+pqmmOptions(o.lvl).map(l=>`<option value="${l}" ${cur===l?"selected":""}>${l}</option>`).join("");
+    return `<div class="vd-row" style="grid-template-columns:1fr minmax(140px,180px)"><div><div class="meta" style="font:500 11px var(--mono);color:var(--muted)">${label(v)} · ${esc(o.tier)} tier</div><div class="txt" style="font-size:13px">${esc(o.t)}</div><div class="req-lvl">Required PQCMM path: ${esc(o.lvl)}</div>${pathBar}</div><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)">Current PQCMM<select data-vd-level="${cri}|${v}">${opts}</select></label></div>`;
+  }).join("");
+  return `<div class="track-summary">${countPctBar(mapped,vds.length,"vendor dependencies mapped")}<span class="pill">${mapped} of ${vds.length} vendor dependencies mapped</span></div><div class="vd-map">${rows}</div>`;
+}
+function bindCriTrackHandlers(root){
+  root.querySelectorAll("[data-rem-check]").forEach(inp=>{
+    inp.onchange=()=>{
+      const parts=inp.getAttribute("data-rem-check").split("|");
+      const n=parts.pop(); const ta=parts.pop(); const cri=parts.join("|");
+      const tr=trackOf(cri); tr.rem[remKey(ta,+n)]=!!inp.checked; saveCriTrack();
+      if(cur==="cri" && !query) renderGrid();
+      if($("#pane").dataset.id===cri) detail(cri);
+    };
+  });
+  root.querySelectorAll("[data-vd-level]").forEach(sel=>{
+    sel.onchange=()=>{
+      const raw=sel.getAttribute("data-vd-level"); const i=raw.lastIndexOf("|");
+      const cri=raw.slice(0,i); const v=raw.slice(i+1);
+      const tr=trackOf(cri);
+      if(sel.value) tr.vdLevel[v]=sel.value; else delete tr.vdLevel[v];
+      saveCriTrack();
+      if(cur==="cri" && !query) renderGrid();
+      if($("#pane").dataset.id===cri) detail(cri);
+    };
+  });
+}
+loadCriTrack();
+
+function cells(){ const out=[]; Object.keys(CRI).forEach(c=>CRI[c].tas.forEach(t=>out.push([c,t]))); return out; }
+function tally(list){ const t={total:list.length,adherent:0,evidenced:0,implemented:0,inprog:0,exc:0,none:0};
+  list.forEach(([c,ta])=>{ const s=(adhOf(c,ta)||{}).status||"not-started";
+    if(s==="evidenced"){t.evidenced++;t.adherent++;} else if(s==="implemented"){t.implemented++;t.adherent++;} else if(s==="in-progress")t.inprog++; else if(s==="exception")t.exc++; else t.none++; });
+  t.pct = t.total? Math.round(100*t.adherent/t.total):0; return t; }
+function pctBar(t, small){ return `<span class="pct ${small?"sm":""}" title="${t.adherent} of ${t.total} implemented or evidenced"><i style="width:${t.pct}%"></i><b>${t.pct}%</b></span>`; }
+function countPctBar(done, total, label, small){
+  const pct = total? Math.round(100*done/total):0;
+  const tip = `${done} of ${total}${label?(" "+label):""}`;
+  return `<span class="pct ${small?"sm":""}" title="${esc(tip)}"><i style="width:${pct}%"></i><b>${pct}%</b></span>`;
+}
+function taRemProgress(ta){
+  // Across CRI outcomes that include this threat area: share of this TA's remediations checked
+  const remN = (TAS[ta].rem||[]).length; if(!remN) return {done:0,total:0,pct:0};
+  const cris = Object.keys(CRI).filter(c=> (CRI[c].tas||[]).includes(ta));
+  let done=0, total=0;
+  cris.forEach(c=>{
+    const tr=trackOf(c);
+    for(let n=1;n<=remN;n++){ total++; if(tr.rem[remKey(ta,n)]) done++; }
+  });
+  return {done,total,pct: total? Math.round(100*done/total):0, cris:cris.length, remN};
+}
+function vdMapProgress(vd){
+  // Across CRI outcomes that touch this VD via a linked TA: share with a current PQCMM set
+  const cris = Object.keys(CRI).filter(c=> vdsForCri(c).includes(vd));
+  let done=0; cris.forEach(c=>{ if(trackOf(c).vdLevel[vd]) done++; });
+  return {done, total:cris.length, pct: cris.length? Math.round(100*done/cris.length):0};
+}
+function pqmmPathProgress(vd, current){
+  const opts=[...String(VDS[vd].lvl||"").matchAll(/L([0-5])/g)].map(m=>+m[1]);
+  if(!opts.length) return null;
+  const target = Math.max(...opts);
+  const cur = current && /^L[0-5]$/.test(current) ? +current.slice(1) : null;
+  if(cur===null) return {pct:0, label:`Not mapped · path ${VDS[vd].lvl}`};
+  const pct = Math.max(0, Math.min(100, Math.round(100*cur/target)));
+  return {pct, label:`${current} toward L${target} (${VDS[vd].lvl})`};
+}
+
+function evidenceComplete(a, ta){
+  if(!a) return false;
+  if(!(a.taAddressed||"").trim()) return false;
+  return vdsForTa(ta).every(v => ((a.vdEvidence||{})[v]||"").trim());
+}
+function loadLocalAdh(){
+  try {
+    const raw = localStorage.getItem(ADH_LS_KEY);
+    if(!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch(e){ return {}; }
+}
+function saveLocalAdh(){
+  try { localStorage.setItem(ADH_LS_KEY, JSON.stringify(ADH)); afterLocalSave(); return true; }
+  catch(e){ adhNote = "Could not write to this browser’s storage ("+(e&&e.name||"error")+")."; return false; }
+}
+(async () => {
+  ADH = loadLocalAdh();
+  adhState = "local";
+  adhNote = Object.keys(ADH).length
+    ? "Adherence and TA/VD evidence are saved in this browser."
+    : "Save adherence with evidence of how each threat area and vendor dependency was addressed.";
+  persistMode = "local";
+  canWrite = true;
+  refresh();
+  try {
+    const timer = setTimeout(()=>{}, 10000);
+    const [db, user] = await Promise.all([window.claude?.use ? claude.use("db") : null, window.claude?.use ? claude.use("user") : null]);
+    if(user){ try { canWrite = await user.can("data.write"); } catch(e){ canWrite = true; } }
+    if(!db){ clearTimeout(timer); return; }
+    dbRef = db;
+    persistMode = "cloud";
+    db.collection("adherence").onSnapshot(snap => {
+      const next = {}; snap.docs.forEach(d => { if(d.exists) next[d.id] = d.data(); });
+      ADH = Object.assign({}, ADH, next);
+      saveLocalAdh();
+      if(!snap.metadata.fromCache){ clearTimeout(timer); adhState="live"; adhNote="Shared adherence record · live"+(canWrite===false?" · you are view-only":""); }
+      refresh();
+    }, err => { clearTimeout(timer); adhState="local"; adhNote="Cloud adherence unavailable ("+err.code+"); continuing with browser storage."; refresh(); });
+  } catch(e){ /* stay on local */ }
+})();
+function refresh(){ if(cur==="CRI" && location.hash.slice(1)==="CRI") renderCRI(); if(cur==="HEAT" && location.hash.slice(1)==="HEAT") renderHeat(); const open = $("#pane").dataset.id; if(open && $("#pane").classList.contains("open") && typeOf(open)) detail(open); }
+async function saveAdh(cri, ta, data){
+  if(canWrite===false){ adhNote="Your access level is view-only for adherence records."; refresh(); return false; }
+  const uid = await (async()=>{ try{ const u = await claude.use("user"); return u ? await u.id() : null; }catch(e){ return null; } })();
+  const vdEvidence = data.vdEvidence || {};
+  const body = {
+    cri, ta,
+    status:data.status,
+    owner:data.owner||"",
+    due:data.due||"",
+    note:data.note||"",
+    taAddressed:data.taAddressed||"",
+    vdEvidence,
+    updatedAt:new Date().toISOString(),
+    updatedBy: uid||"local"
+  };
+  if(body.status==="evidenced" && !evidenceComplete(body, ta)){
+    adhNote = "For Evidenced, record how this threat area was addressed and how each linked vendor dependency was addressed.";
+    refresh();
+    return false;
+  }
+  ADH[adhKey(cri,ta)] = body;
+  const localOk = saveLocalAdh();
+  if(dbRef){
+    try { await dbRef.collection("adherence").doc(adhKey(cri,ta)).set(body); adhState="live"; adhNote=""; }
+    catch(e){ if(e && e.code==="invalid_argument"){ canWrite=false; adhNote="Your access level is view-only for adherence records."; }
+      else { adhNote="Cloud save failed ("+(e&&e.code||"error")+"); kept a local copy in this browser."; adhState="local"; } }
+  } else if(localOk){
+    adhState="local";
+    adhNote="Saved in this browser, including TA and VD evidence.";
+  }
+  refresh();
+  return localOk || !!dbRef;
+}
+function collectEditorData(){
+  const vdEvidence = {};
+  document.querySelectorAll("[data-vd-ev]").forEach(el => { vdEvidence[el.getAttribute("data-vd-ev")] = el.value.trim(); });
+  return {
+    status:$("#ed-status").value,
+    owner:$("#ed-owner").value.trim(),
+    due:$("#ed-due").value,
+    note:$("#ed-note").value.trim(),
+    taAddressed:($("#ed-ta-addressed")||{value:""}).value.trim(),
+    vdEvidence
+  };
+}
+function editor(cri, ta){
+  const a = adhOf(cri,ta) || {}; const ro = canWrite===false;
+  const opts = Object.keys(STATUS).map(k=>`<option value="${k}" ${(a.status||"not-started")===k?"selected":""}>${STATUS[k].l}</option>`).join("");
+  const vds = vdsForTa(ta);
+  const vdFields = vds.length
+    ? `<div class="vd-grid"><p class="hint">How each linked vendor dependency was addressed for this CRI outcome <span class="req">required for Evidenced</span></p>` +
+      vds.map(v => {
+        const vt = VDS[v] ? VDS[v].t : v;
+        const val = esc(((a.vdEvidence||{})[v])||"");
+        return `<label>${label(v)} — ${esc(vt)}<textarea data-vd-ev="${v}" rows="2" placeholder="Evidence that ${label(v)} risks for this control are addressed (controls, tickets, vendor attestations, exceptions)" ${ro?"disabled":""}>${val}</textarea></label>`;
+      }).join("") + `</div>`
+    : `<p class="hint">No vendor dependencies are linked to ${label(ta)} in the register.</p>`;
+  const complete = evidenceComplete(a, ta);
+  return `<div class="editor" data-cri="${cri}" data-ta="${ta}">
+    <div class="top"><div><div class="idl">${esc(cri)} × ${label(ta)}</div><b>${esc(CRI[cri].t)}</b></div><button class="btn" id="ed-close">Close</button></div>
+    <p class="hint">${esc(TAS[ta].t)} — ${CRI[cri].controls.filter(c=>c[0]===ta).map(c=>"remediation "+c[1]).join(", ")||"in scope"}</p>
+    <label>Status<select id="ed-status" ${ro?"disabled":""}>${opts}</select></label>
+    <label>Control owner<input id="ed-owner" value="${esc(a.owner||"")}" placeholder="Team or role" ${ro?"disabled":""}></label>
+    <label>Target date<input id="ed-due" type="date" value="${esc(a.due||"")}" ${ro?"disabled":""}></label>
+    <label>How this threat area was addressed <span class="req">required for Evidenced</span><textarea id="ed-ta-addressed" rows="3" placeholder="Describe remediations, compensating controls, residual risk, and where proof lives for ${label(ta)}" ${ro?"disabled":""}>${esc(a.taAddressed||"")}</textarea></label>
+    ${vdFields}
+    <label>Additional evidence / note<textarea id="ed-note" rows="2" placeholder="Pointers to tickets, CBOM extracts, or exception IDs" ${ro?"disabled":""}>${esc(a.note||"")}</textarea></label>
+    <p class="hint">${complete?"TA and VD evidence is complete for this cell.":"Fill the threat-area and vendor-dependency evidence before marking Evidenced."}</p>
+    <div class="chips">${ro?`<span class="hint">View-only: statuses are recorded by Contributors and Editors.</span>`:`<button class="btn primary" id="ed-save">Save</button>`}<button class="chip" data-go="${ta}">Open ${label(ta)}</button><button class="chip" data-go="${cri}">Open ${esc(cri)}</button></div>
+    ${a.updatedAt?`<p class="hint">Last updated ${esc(a.updatedAt.slice(0,10))}</p>`:""}
+    <p class="hint" id="ed-save-msg"></p>
+  </div>`;
+}
+function openEditor(cri, ta){
+  const pane = $("#pane"); pane.dataset.id = ""; pane.innerHTML = editor(cri, ta); pane.classList.add("open");
+  $("#ed-close").onclick = closePane;
+  const sv = $("#ed-save"); if(sv) sv.onclick = async () => {
+    sv.disabled = true; sv.textContent = "Saving…";
+    const data = collectEditorData();
+    const ok = await saveAdh(cri, ta, data);
+    const msg = $("#ed-save-msg");
+    if(ok){ sv.textContent = "Saved"; if(msg) msg.textContent = adhNote || "Saved."; setTimeout(()=>{ openEditor(cri, ta); }, 350); }
+    else { sv.disabled = false; sv.textContent = "Save"; if(msg) msg.textContent = adhNote || "Save failed — add TA and VD evidence before Evidenced."; }
+  };
+}
+
+function criControl(c){
+  const [ta, r] = c;
+  if(ta==="S") return esc(r);
+  const o = TAS[ta]; return `<button class="link" data-go="${ta}">${label(ta)}</button> remediation ${r}: ${esc(o.rem[r-1])}`;
+}
+function renderCRI(){
+  cur = "CRI"; renderNav();
+  const tas = Object.keys(TAS); const all = tally(cells());
+  let rows = "";
+  CRI_FN.forEach(fn=>{
+    const ids = Object.keys(CRI).filter(k=>CRI[k].fn===fn); if(!ids.length) return;
+    const ft = tally(cells().filter(([c])=>CRI[c].fn===fn));
+    rows += `<tr class="fnrow"><td colspan="2">${esc(fn)} <span class="muted">· ${ids.length} outcomes</span></td><td colspan="${tas.length}">${pctBar(ft,true)}</td></tr>`;
+    ids.forEach(k=>{ const o=CRI[k]; const rt = tally(o.tas.map(t=>[k,t]));
+      rows += `<tr><td class="sub"><button class="link" data-go="${k}">${k}</button>${o.legacy?`<span class="leg">was ${esc(o.legacy)}</span>`:""}</td><td class="out">${esc(o.t)}<span class="rowpct">${pctBar(rt,true)}</span></td>` +
+        tas.map(t=>{ const on=o.tas.includes(t); if(!on) return `<td class="cell"></td>`; const a=adhOf(k,t); const st=(a&&a.status)||"not-started";
+          return `<td class="cell on st-${st}" data-cell="${k}|${t}" title="${label(t)} · ${STATUS[st].l}${a&&a.owner?" · "+esc(a.owner):""}">${STATUS[st].g}</td>`; }).join("") + `</tr>`; });
+  });
+  const head = tas.map(t=>{ const ct = tally(cells().filter(([,x])=>x===t)); return `<th class="rot" title="${esc(TAS[t].t)}"><button class="link" data-go="${t}">${label(t)}</button><span class="band ${TAS[t].band}">${TAS[t].trcl}</span><span class="colpct">${ct.pct}%</span></th>`; }).join("");
+  const tiles = `<div class="tiles">
+      <div class="tile"><span class="k">Adherence</span><span class="v">${all.pct}%</span><span class="s">${all.adherent} of ${all.total} risk × control cells implemented or evidenced</span></div>
+      <div class="tile"><span class="k">Evidenced</span><span class="v">${all.evidenced}</span><span class="s">assessor-ready</span></div>
+      <div class="tile"><span class="k">Implemented</span><span class="v">${all.implemented}</span><span class="s">awaiting evidence</span></div>
+      <div class="tile"><span class="k">In progress</span><span class="v">${all.inprog}</span><span class="s">work under way</span></div>
+      <div class="tile warn"><span class="k">Exceptions</span><span class="v">${all.exc}</span><span class="s">open, with expiry ≤ SM2</span></div>
+      <div class="tile"><span class="k">Not started</span><span class="v">${all.none}</span><span class="s">no status recorded</span></div></div>`;
+  const stateLine = adhState==="live" ? `Shared adherence record · live${canWrite===false?" · you are view-only":""}` : adhState==="local" ? esc(adhNote||"Adherence is saved in this browser.") : adhState==="loading" ? "Loading adherence records…" : esc(adhNote);
+  $("#main").innerHTML = `<div class="ucv">
+    <div class="top"><div><div class="idl">View — CRI Profile v2.0 and NIST CSF 2.0 adherence</div><h2>Risk and controls by function</h2></div><button class="btn" id="back">← Browse</button></div>
+    <p>Rows are CSF 2.0 subcategories; columns are the register’s threat areas with band and TRCL. Each marked cell is one risk × control pairing with its own adherence status — click it to set status, owner, target date and evidence. Percentages are the share of cells implemented or evidenced, per outcome, per function and per threat area.</p>
+    <p class="hint" id="adh-state">${stateLine}</p>${persistControlsHtml()}
+    ${tiles}
+    <div class="legend">${Object.keys(STATUS).map(k=>`<span><i class="sw st-${k}"></i>${STATUS[k].g} ${STATUS[k].l}</span>`).join("")}</div>
+    <div class="matwrap"><table class="mat"><thead><tr><th class="sub">Subcategory</th><th class="out">Outcome</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="hint">Diagnostic-statement IDs are completed from the CRI Profile workbook at the institution’s Impact Tier. Legacy identifiers from register v0.5 (CSF 1.1) shown as “was …”.</p></div>`;
+  $("#back").onclick = ()=>{ cur="ta"; location.hash=""; renderNav(); renderGrid(); };
+  $("#main").querySelectorAll("[data-cell]").forEach(td=>td.onclick=()=>{ const [c,t]=td.dataset.cell.split("|"); openEditor(c,t); });
+  bindPersistControls($("#main"));
+}
+
+// ---------------------------------------------------------------- heatmap (CRI category × threat area)
+const CRI_CATS = (()=>{ const m={}; Object.keys(CRI).forEach(k=>{ const o=CRI[k]; const key=o.fn+"|"+o.cat; (m[key]=m[key]||{fn:o.fn,cat:o.cat,ids:[]}).ids.push(k); }); return CRI_FN.flatMap(fn=>Object.values(m).filter(c=>c.fn===fn)); })();
+const RESID_W = {"not-started":1,"in-progress":0.6,"implemented":0.25,"evidenced":0,"exception":1};
+let heatMode = "inherent", heatUC = "ALL";
+function heatCell(cat, ta){ let risk=0, resid=0, n=0; const pairs=[];
+  cat.ids.forEach(k=>{ if(!CRI[k].tas.includes(ta)) return; const trcl=TAS[ta].trcl; const st=((adhOf(k,ta)||{}).status)||"not-started"; n++; risk+=trcl; resid+=trcl*RESID_W[st]; pairs.push([k,st]); });
+  return {risk, resid, n, pairs}; }
+function heatTAs(){ return heatUC==="ALL" ? Object.keys(TAS) : USECASES[heatUC].tas; }
+function renderHeat(){
+  cur = "HEAT"; renderNav();
+  const tas = heatTAs(); const key = heatMode==="inherent" ? "risk" : "resid";
+  const grid = CRI_CATS.map(c=>({c, cells: tas.map(t=>heatCell(c,t))}));
+  const max = Math.max(1, ...grid.flatMap(g=>g.cells.map(x=>x[key])));
+  const step = v => v<=0 ? 0 : Math.min(6, 1+Math.floor(5*v/max));
+  const colTot = tas.map((t,i)=>grid.reduce((a,g)=>a+g.cells[i][key],0));
+  const rowTot = grid.map(g=>g.cells.reduce((a,x)=>a+x[key],0));
+  const grand = rowTot.reduce((a,b)=>a+b,0), grandRisk = grid.reduce((a,g)=>a+g.cells.reduce((x,y)=>x+y.risk,0),0);
+  let body = ""; let lastFn = "";
+  grid.forEach((g,ri)=>{ if(g.c.fn!==lastFn){ lastFn=g.c.fn; body+=`<div class="hm-fn" style="grid-column:1 / span ${tas.length+2}">${esc(lastFn)}</div>`; }
+    body += `<div class="hm-row">${esc(g.c.cat)}<span class="hm-sub">${g.c.ids.join(" · ")}</span></div>`;
+    g.cells.forEach((x,ci)=>{ const v=x[key]; const sdx=step(v); const t=tas[ci];
+      body += x.n ? `<button class="hm-cell s${sdx} ${sdx>=4?"ink-light":""}" data-heat="${ri}|${t}" title="${esc(g.c.cat)} × ${label(t)}: ${x.n} pairings · inherent ${x.risk} · residual ${Math.round(x.resid)}">${heatMode==="inherent"?v:Math.round(v)}</button>` : `<div class="hm-cell empty"></div>`; });
+    body += `<div class="hm-tot">${Math.round(rowTot[ri])}</div>`; });
+  body += `<div class="hm-row hm-totrow">All categories</div>` + colTot.map(v=>`<div class="hm-tot">${Math.round(v)}</div>`).join("") + `<div class="hm-tot">${Math.round(grand)}</div>`;
+  const head = `<div class="hm-corner">CRI category down, threat area across</div>` + tas.map(t=>`<button class="hm-col" data-go="${t}" title="${esc(TAS[t].t)}">${label(t)}<span class="band ${TAS[t].band}">TRCL ${TAS[t].trcl}</span></button>`).join("") + `<div class="hm-corner">Total</div>`;
+  const pct = grandRisk? Math.round(100*(1-grand/grandRisk)) : 0;
+  $("#main").innerHTML = `<div class="ucv ${heatMode==="resid"?"resid":""}">
+    <div class="top"><div><div class="idl">View — risk heatmap</div><h2>${heatMode==="inherent"?"Inherent risk":"Residual exposure"} by CRI category and threat area</h2></div><button class="btn" id="back">← Browse</button></div>
+    <p>${heatMode==="inherent"
+      ? "Each cell sums the TRCL (0–8) of every risk × control pairing between a CRI category and a threat area, so a dark cell is where a high-complexity threat area meets many outcomes. It changes only when the register changes."
+      : "The same sum, discounted by recorded adherence: evidenced pairings count 0, implemented 0.25, in progress 0.6, not started and open exceptions 1. It falls as the team records progress — this is the picture to put in front of leadership."}</p>
+    <div class="hm-controls">
+      <div class="seg" role="tablist"><button class="${heatMode==="inherent"?"on":""}" data-mode="inherent">Inherent risk</button><button class="${heatMode==="resid"?"on":""}" data-mode="resid">Residual exposure</button></div>
+      <div class="seg"><button class="${heatUC==="ALL"?"on":""}" data-uc="ALL">All threat areas</button>${Object.keys(USECASES).map(u=>`<button class="${heatUC===u?"on":""}" data-uc="${u}">${esc(USECASES[u].t.split(" (")[0])}</button>`).join("")}</div>
+      <div class="hm-legend"><span>low</span>${[1,2,3,4,5,6].map(i=>`<i class="s${i}"></i>`).join("")}<span>high</span>${heatMode==="resid"?`<span class="hint" style="margin-left:12px">Residual is ${pct}% below inherent across the ${heatUC==="ALL"?"register":"use case"}</span>`:""}</div>
+    </div>
+    <div class="hm" style="grid-template-columns: 240px repeat(${tas.length}, minmax(64px,1fr)) 72px">${head}${body}</div>
+    <p class="hint">Click a cell to see its pairings and record adherence; click a column header to open the threat area. ${adhState==="live"?"Adherence data is live.":adhState==="local"?(adhNote||"Adherence is saved in this browser."):esc(adhNote)}</p>
+    <div id="hm-detail"></div></div>`;
+  $("#back").onclick = ()=>{ cur="ta"; location.hash=""; renderNav(); renderGrid(); };
+  $("#main").querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{ heatMode=b.dataset.mode; renderHeat(); });
+  $("#main").querySelectorAll("[data-uc]").forEach(b=>b.onclick=()=>{ heatUC=b.dataset.uc; renderHeat(); });
+  $("#main").querySelectorAll("[data-heat]").forEach(b=>b.onclick=()=>{ const [ri,t]=b.dataset.heat.split("|"); const g=grid[+ri]; const x=heatCell(g.c,t);
+    $("#hm-detail").innerHTML = `<div class="ta-card"><div class="hd"><span class="idl">${esc(g.c.fn)} · ${esc(g.c.cat)} × ${label(t)}</span><b>${esc(TAS[t].t)}</b><span class="band ${TAS[t].band}">TRCL ${TAS[t].trcl}</span></div>
+      <p class="why">${x.n} pairings · inherent ${x.risk} · residual ${Math.round(x.resid)}</p>
+      <div class="adhlist">${x.pairs.map(([k,st])=>{ const a=adhOf(k,t)||{}; return `<button class="adhrow st-${st}" data-cell="${k}|${t}"><span class="g">${STATUS[st].g}</span><span class="t">${k} · ${esc(CRI[k].t)}</span><span class="m">${STATUS[st].l}${a.owner?" · "+esc(a.owner):""}</span></button>`; }).join("")}</div></div>`;
+    $("#hm-detail").querySelectorAll("[data-cell]").forEach(bb=>bb.onclick=()=>{ const [c,tt]=bb.dataset.cell.split("|"); openEditor(c,tt); });
+    $("#hm-detail").scrollIntoView({block:"nearest"}); });
+}
+
+// ---------------------------------------------------------------- routing
+function go(id){ if(id==="CRI"){ location.hash="CRI"; renderCRI(); return; } if(id==="HEAT"){ location.hash="HEAT"; renderHeat(); return; } if(!typeOf(id)) return; location.hash = id; open(id); }
+document.addEventListener("click", e => { const v = e.target.closest("[data-view]"); if(v && !v.closest("nav")) go(v.dataset.view); });
+function open(id){ const t=typeOf(id); if(t.k==="uc"){ closePane(); ucSel=null; cur="uc"; renderNav(); renderUseCase(id); } else detail(id); }
+document.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if(b) go(b.dataset.go); });
+$("#q").addEventListener("input", e => { query = e.target.value.trim().toLowerCase(); renderGrid(); });
+window.addEventListener("hashchange", () => { const id = location.hash.slice(1); if(id==="CRI") renderCRI(); else if(id==="HEAT") renderHeat(); else if(typeOf(id)) open(id); });
+ensureCriTrack();
+const hx=$("#hdr-export"); if(hx) hx.onclick=()=>exportPersistBundle();
+const hi=$("#hdr-import"); if(hi) hi.onchange=()=>{ if(hi.files&&hi.files[0]) importPersistFile(hi.files[0]); hi.value=""; };
+maybeAutoBackup();
+renderNav(); renderGrid();
+const start = location.hash.slice(1); if(start==="CRI") renderCRI(); else if(start==="HEAT") renderHeat(); else if(start && typeOf(start)) open(start);
+</script>
+
+</body></html>
